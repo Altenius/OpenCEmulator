@@ -2,6 +2,7 @@
 #include <QBitmap>
 #include <FontLoader.h>
 #include <iostream>
+#include <assert.h>
 #include "ComponentScreen.h"
 #include "ui/ScreensWidget.h"
 
@@ -51,9 +52,11 @@ ComponentScreen::ComponentScreen(const std::string &uuid, const std::string &lab
 }
 
 
+
 bool ComponentScreen::luaSetTouchModeInverted(const ArgList &args, ArgList &out) {
     return true;
 }
+
 
 
 bool ComponentScreen::luaSetPrecise(const ArgList &args, ArgList &out) {
@@ -61,9 +64,11 @@ bool ComponentScreen::luaSetPrecise(const ArgList &args, ArgList &out) {
 }
 
 
+
 bool ComponentScreen::luaTurnOn(const ArgList &args, ArgList &out) {
     return true;
 }
+
 
 
 bool ComponentScreen::luaGetAspectRatio(const ArgList &args, ArgList &out) {
@@ -73,9 +78,11 @@ bool ComponentScreen::luaGetAspectRatio(const ArgList &args, ArgList &out) {
 }
 
 
+
 bool ComponentScreen::luaTurnOff(const ArgList &args, ArgList &out) {
     return true;
 }
+
 
 
 bool ComponentScreen::luaIsOn(const ArgList &args, ArgList &out) {
@@ -83,14 +90,17 @@ bool ComponentScreen::luaIsOn(const ArgList &args, ArgList &out) {
 }
 
 
+
 bool ComponentScreen::luaIsPrecise(const ArgList &args, ArgList &out) {
     return true;
 }
 
 
+
 bool ComponentScreen::luaIsTouchModeInverted(const ArgList &args, ArgList &out) {
     return true;
 }
+
 
 
 bool ComponentScreen::luaGetKeyboards(const ArgList &args, ArgList &out) {
@@ -105,9 +115,11 @@ bool ComponentScreen::luaGetKeyboards(const ArgList &args, ArgList &out) {
 }
 
 
+
 void ComponentScreen::setPaletteColor(unsigned char idx, unsigned int color) {
     m_colorPalette->set(idx, color);
 }
+
 
 
 void ComponentScreen::set(int x, int y, const QString &value, bool vertical) {
@@ -143,10 +155,12 @@ void ComponentScreen::set(int x, int y, const QString &value, bool vertical) {
             painter.drawPixmap(QPoint(x * PIXEL_WIDTH, y * PIXEL_HEIGHT), FontLoader::get().getGlyph(c.unicode()));
 
             if (x >= 0 && x < m_width && y >= 0 && y < m_height) {
+                assert(x >= 0); assert(y >= 0); assert(x < m_width); assert(y < m_height);
                 m_pixels[x][y] = Pixel{c.unicode(), m_packed};
 
                 for (int i = x + 1; i < x + width; ++i) {
                     if (i < m_width) {
+                        assert(i >= 0); assert(y >= 0); assert(i < m_width); assert(y < m_height);
                         m_pixels[i][y] = Pixel{' ', m_packed};
                     }
                 }
@@ -170,6 +184,7 @@ void ComponentScreen::set(int x, int y, const QString &value, bool vertical) {
         m_widget->update();
     }
 }
+
 
 
 void ComponentScreen::fill(int x, int y, int w, int h, QChar character) {
@@ -210,10 +225,12 @@ void ComponentScreen::fill(int x, int y, int w, int h, QChar character) {
         for (int iy = 0; iy < h; ++iy) {
             painter.drawPixmap((x + ix) * PIXEL_WIDTH, (y + iy) * PIXEL_HEIGHT, glyph);
 
+            assert((x + ix) >= 0); assert((y + iy) >= 0); assert((x + ix) < m_width); assert((y + iy) < m_height);
             m_pixels[x + ix][y + iy] = Pixel{unicode, m_packed};
 
             for (int tx = ix + 1; tx < ix + gWidth; tx++) {
                 if (x + tx < m_width) {
+                    assert((x + tx) >= 0); assert((y + iy) >= 0); assert((x + tx) < m_width); assert((y + iy) < m_height);
                     m_pixels[x + tx][y + iy] = Pixel{' ', m_packed};
                 }
             }
@@ -226,8 +243,12 @@ void ComponentScreen::fill(int x, int y, int w, int h, QChar character) {
 }
 
 
+
 void ComponentScreen::copy(int x, int y, unsigned int w, unsigned int h, int tx,
                            int ty) {
+    if (w == 0 || h == 0) {
+        return;
+    }
     QPainter painter(&m_buffer);
     QPixmap temp(w * PIXEL_WIDTH, h * PIXEL_HEIGHT);
     {
@@ -252,6 +273,9 @@ void ComponentScreen::copy(int x, int y, unsigned int w, unsigned int h, int tx,
     if (tx < 0) {
         dx = -1;
         sx = std::min<int>(m_width - 1, x + w);
+        if (sx + ty < 0) {
+            return;
+        }
         ex = std::max<int>(0, std::min(m_width - 1, std::max<int>(0, x + tx) - tx)) - 1;
     } else {
         dx = 1;
@@ -262,6 +286,9 @@ void ComponentScreen::copy(int x, int y, unsigned int w, unsigned int h, int tx,
     if (ty < 0) {
         dy = -1;
         sy = std::min<int>(m_height - 1, y + h);
+        if (sy + ty < 0) {
+            return;
+        }
         ey = std::max<int>(0, std::min(m_height - 1, std::max<int>(0, y + ty) - ty)) - 1;
     } else {
         dy = 1;
@@ -275,6 +302,8 @@ void ComponentScreen::copy(int x, int y, unsigned int w, unsigned int h, int tx,
         }
 
         for (int iy = sy; iy != ey; iy += dy) {
+            assert((ix + tx) >= 0); assert((iy + ty) >= 0); assert((ix + tx) < m_width); assert((iy + ty) < m_height);
+            assert(ix >= 0); assert(iy >= 0); assert(ix < m_width); assert(iy < m_height);
             m_pixels[ix + tx][iy + ty] = m_pixels[ix][iy];
         }
     }
@@ -283,6 +312,8 @@ void ComponentScreen::copy(int x, int y, unsigned int w, unsigned int h, int tx,
         m_widget->update();
     }
 }
+
+
 
 void ComponentScreen::setResolution(int x, int y) {
     m_width = m_viewportX = x;
@@ -302,6 +333,8 @@ void ComponentScreen::setResolution(int x, int y) {
     m_pixels.resize(m_width, line);
 }
 
+
+
 bool ComponentScreen::setViewport(int w, int h) {
     if (w < 1 || h < 1 || w > m_width || h > m_height) {
         return false; // "unsupported viewport resolution"
@@ -312,6 +345,8 @@ bool ComponentScreen::setViewport(int w, int h) {
 
     return true;
 }
+
+
 
 void ComponentScreen::cleanup() {
     for (ComponentWeakPtr c : m_keyboards) {
@@ -324,5 +359,5 @@ void ComponentScreen::cleanup() {
 }
 
 ComponentScreen::~ComponentScreen() {
-
+    
 }

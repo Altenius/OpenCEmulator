@@ -26,108 +26,11 @@ OpenCEmulator::OpenCEmulator(int argc, char **argv) : QApplication(argc, argv), 
     m_baseDirectory = QDir::homePath().toStdString().append("/.ocemulator");
     m_filesystemDirectory = m_baseDirectory + "/files";
     
-    QDir(QString::fromStdString(m_baseDirectory)).mkpath(".");
-
-    m_instancesConfig.initialize();
-    m_componentsConfig.initialize();
+    QDir(QDir::homePath()).mkpath(".ocemulator");
+    QDir(QString::fromStdString(m_baseDirectory)).mkpath("files");
     
-    bool defaultKeyboard = false;
-    
-    for (const ComponentConfig &componentConfig : m_componentsConfig.components()) {
-        const std::string &type = componentConfig.type();
-        const std::string &uuid = componentConfig.name();
-        const std::string &label = componentConfig.label();
-        
-        if (type == "eeprom") {
-            addComponent(ComponentPtr(new ComponentEEPROM(uuid, label)));
-        } else if (type == "filesystem") {
-            addComponent(ComponentPtr(new ComponentRealFilesystem(uuid, label)));
-        } else if (type == "screen") {
-            ComponentScreen *screen = new ComponentScreen(uuid, label);
-            addComponent(ComponentPtr(screen));
-        } else if (type == "keyboard") {
-            ComponentPtr component = findComponent(componentConfig.extra());
-            if (!component) {
-                std::cerr << "Could not attach keyboard: screen not found with uuid '" << componentConfig.extra() << "'" << std::endl;
-                continue;
-            }
-            ComponentPtr keyboard(new ComponentKeyboard(component, uuid, label));
-            addComponent(keyboard);
-            
-            std::static_pointer_cast<ComponentScreen>(component)->attachKeyboard(keyboard);
-        } else if (type == "gpu") {
-            // gpu should be rebound to the screen in the future
-            addComponent(ComponentPtr(new ComponentGPU(uuid, label)));
-        } else {
-            std::cerr << "unknown component type: " << type << std::endl;
-            continue;
-        }
-        
-        std::cout << "added component " << type << " with uuid " << uuid << std::endl;
-    }
-    
-    for (const InstanceConfig &config : m_instancesConfig.instances()) {
-        InstancePtr instance(new Instance(4 * 1024 * 1024, config.label(), config.uuid())); // 4MiB
-        ComponentPtr computer(new ComponentComputer(instance.get()));
-        addComponent(computer);
-        computer->attach(instance);
-        instance->attachComponent(computer);
-        
-        for (const std::string &uuid : config.components()) {
-            ComponentPtr component = findComponent(uuid);
-            if (!component) {
-                std::cerr << "Could not find component '" << uuid << "' for instance '" << config.uuid() << "'" << std::endl;
-                continue;
-            }
-            instance->attachComponent(component);
-            component->attach(instance);
-            
-            std::cout << "attached component " << component->uuid() << " (" << component->type() << ") to instance " << instance->address() << std::endl;
-        }
-
-        if (!instance->initialize()) {
-            std::cerr << "Failed to initialize instance" << std::endl;
-        } else {
-            addInstance(instance);
-        }
-    }
-
-
-    /*InstancePtr instance(new Instance(4 * 1024 * 1024));
-    ComponentPtr eeprom(new ComponentEEPROM);
-    ComponentPtr filesystem(new ComponentRealFilesystem("5958eb4d-d905-7998-a6db-9d42c5f5f005"));
-    ComponentPtr computer(new ComponentComputer(instance.get()));
-    ComponentPtr gpu(new ComponentGPU);
-    ComponentPtr screen(new ComponentScreen);
-    ComponentPtr keyboard(new ComponentKeyboard(static_cast<ComponentScreen*>(screen.get())));
-    m_components.push_back(eeprom);
-    m_components.push_back(filesystem);
-    m_components.push_back(computer);
-    m_components.push_back(gpu);
-    m_components.push_back(screen);
-    m_components.push_back(keyboard);
-    eeprom->attach(instance.get());
-    instance->attachComponent(eeprom.get());
-    filesystem->attach(instance.get());
-    instance->attachComponent(filesystem.get());
-    computer->attach(instance.get());
-    instance->attachComponent(computer.get());
-    gpu->attach(instance.get());
-    instance->attachComponent(gpu.get());
-    screen->attach(instance.get());
-    instance->attachComponent(screen.get());
-    keyboard->attach(instance.get());
-    instance->attachComponent(keyboard.get());
-    
-    m_mainWindow->screens()->setScreen(static_cast<ComponentScreen*>(screen.get()));
-    m_mainWindow->screens()->setKeyboard(static_cast<ComponentKeyboard*>(keyboard.get()));
-    static_cast<ComponentScreen*>((screen.get()))->setWidget(m_mainWindow->screens());
-
-    instance->initialize();
-    m_instances.push_back(instance);*/
-
-    // m_componentsConfig.saveConfig(m_components);
-    // m_instancesConfig.saveConfig(m_instances)
+    loadComponents();
+    loadInstances();
 }
 
 
@@ -175,6 +78,8 @@ ComponentPtr OpenCEmulator::findComponent(const std::string &address) {
     return nullptr;
 }
 
+
+
 void OpenCEmulator::addComponent(const ComponentPtr &component) {
     m_components.push_back(component);
     emit componentsChanged(m_components);
@@ -207,4 +112,74 @@ void OpenCEmulator::removeComponent(const ComponentPtr &component) {
 void OpenCEmulator::save() {
     m_componentsConfig.saveConfig(m_components);
     m_instancesConfig.saveConfig(m_instances);
+}
+
+
+
+void OpenCEmulator::loadComponents() {
+    m_componentsConfig.initialize();
+
+    for (const ComponentConfig &componentConfig : m_componentsConfig.components()) {
+        const std::string &type = componentConfig.type();
+        const std::string &uuid = componentConfig.name();
+        const std::string &label = componentConfig.label();
+
+        if (type == "eeprom") {
+            addComponent(ComponentPtr(new ComponentEEPROM(uuid, label)));
+        } else if (type == "filesystem") {
+            addComponent(ComponentPtr(new ComponentRealFilesystem(uuid, label)));
+        } else if (type == "screen") {
+            ComponentScreen *screen = new ComponentScreen(uuid, label);
+            addComponent(ComponentPtr(screen));
+        } else if (type == "keyboard") {
+            ComponentPtr component = findComponent(componentConfig.extra());
+            // component could be nullptr
+            ComponentPtr keyboard(new ComponentKeyboard(component, uuid, label));
+            addComponent(keyboard);
+
+            if (component) {
+                std::static_pointer_cast<ComponentScreen>(component)->attachKeyboard(keyboard);
+            }
+        } else if (type == "gpu") {
+            // gpu should be rebound to the screen in the future
+            addComponent(ComponentPtr(new ComponentGPU(uuid, label)));
+        } else {
+            std::cerr << "unknown component type: " << type << std::endl;
+            continue;
+        }
+
+        std::cout << "added component " << type << " with uuid " << uuid << std::endl;
+    }
+}
+
+
+
+void OpenCEmulator::loadInstances() {
+    m_instancesConfig.initialize();
+
+    for (const InstanceConfig &config : m_instancesConfig.instances()) {
+        InstancePtr instance(new Instance(4 * 1024 * 1024, config.label(), config.uuid())); // 4MiB
+        ComponentPtr computer(new ComponentComputer(instance.get()));
+        addComponent(computer);
+        computer->attach(instance);
+        instance->attachComponent(computer);
+
+        for (const std::string &uuid : config.components()) {
+            ComponentPtr component = findComponent(uuid);
+            if (!component) {
+                std::cerr << "Could not find component '" << uuid << "' for instance '" << config.uuid() << "'" << std::endl;
+                continue;
+            }
+            instance->attachComponent(component);
+            component->attach(instance);
+
+            std::cout << "attached component " << component->uuid() << " (" << component->type() << ") to instance " << instance->address() << std::endl;
+        }
+
+        if (!instance->initialize()) {
+            std::cerr << "Failed to initialize instance" << std::endl;
+        } else {
+            addInstance(instance);
+        }
+    }
 }

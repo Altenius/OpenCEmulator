@@ -19,31 +19,36 @@ void ComponentsConfiguration::initialize() {
 
 
 void ComponentsConfiguration::readConfig(rapidjson::Document &d) {
+    if (!d.IsObject()) {
+        std::cerr << "Document is not an object; cannot load components.json" << std::endl;
+        return;
+    }
     for (auto &component : d.GetObject()) {
         if (!component.value.IsObject()) {
             std::cerr << "error: non-object located in root object of components.json" << std::endl;
             continue;
         }
 
-        auto type = component.value.FindMember("type");
-        if (type == component.value.MemberEnd() || !type->value.IsString()) {
-            std::cerr << "error: could not find 'type' string in a component in components.json" << std::endl;
-            continue;
-        }
+        std::string extraString, labelString, typeString, nameString = component.name.GetString();
         
-        std::string extraString, labelString;
-        
-        auto extra = component.value.FindMember("extra");
-        if (extra != component.value.MemberEnd() && extra->value.IsString()) {
-            extraString.assign(extra->value.GetString());
-        }
-        
-        auto label = component.value.FindMember("label");
-        if (label != component.value.MemberEnd() && label->value.IsString()) {
-            labelString.assign(label->value.GetString());
+        for (auto &value : component.value.GetObject()) {
+            std::string name = value.name.GetString();
+            if (name == "type") {
+                if (value.value.IsString()) {
+                    typeString.assign(value.value.GetString());
+                }
+            } else if (name == "extra") {
+                if (value.value.IsString()) {
+                    extraString.assign(value.value.GetString());
+                }
+            } else if (name == "label") {
+                if (value.value.IsString()) {
+                    labelString.assign(value.value.GetString());
+                }
+            }
         }
 
-        m_components.push_back(ComponentConfig(component.name.GetString(), type->value.GetString(), labelString, extraString));
+        m_components.push_back(ComponentConfig(nameString, typeString, labelString, extraString));
     }
 }
 
@@ -65,7 +70,10 @@ void ComponentsConfiguration::saveConfig(const std::vector<ComponentPtr> &compon
         
         if (sType == "keyboard") {
             // save data about the connected screen
-            extra = std::static_pointer_cast<ComponentKeyboard>(component)->screen()->uuid();
+            
+            if (ComponentPtr screen = std::static_pointer_cast<ComponentKeyboard>(component)->screen()) {
+                extra.assign(screen->uuid());
+            }
         }
         type.SetString(sType.c_str(), sType.length(), d.GetAllocator());
         componentData.AddMember("type", type, d.GetAllocator());

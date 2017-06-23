@@ -62,6 +62,9 @@ private:
     
     InstancesConfiguration m_instancesConfig;
     ComponentsConfiguration m_componentsConfig;
+    
+    void loadComponents();
+    void loadInstances();
 };
 
 
