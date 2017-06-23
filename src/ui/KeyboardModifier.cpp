@@ -61,11 +61,6 @@ void KeyboardModifier::on_comboScreen_currentIndexChanged(int index)
 
             keyboard->setScreen(componentScreen);
             screen->attachKeyboard(component);
-
-            const ScreensWidgetPtr &widget = screen->widget();
-            if (widget) {
-                widget->setKeyboard(component);
-            }
         }
     }
 }

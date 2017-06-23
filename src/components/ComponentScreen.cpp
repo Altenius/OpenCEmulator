@@ -401,3 +401,28 @@ ComponentScreen::~ComponentScreen()
 {
 
 }
+
+
+
+void ComponentScreen::attachKeyboard(const ComponentPtr &keyboard)
+{
+    m_keyboards.push_back(ComponentWeakPtr(keyboard));
+    if (m_widget) {
+        m_widget->setKeyboard(keyboard);
+    }
+}
+
+
+
+void ComponentScreen::detachKeyboard(const ComponentPtr &keyboard)
+{
+    std::remove_if(m_keyboards.begin(), m_keyboards.end(),
+                   [keyboard](ComponentWeakPtr &c) { return c.lock() == keyboard; });
+    if (m_widget) {
+        if (!m_keyboards.empty()) {
+            m_widget->setKeyboard(m_keyboards[0].lock());
+        } else {
+            m_widget->setKeyboard(nullptr);
+        }
+    }
+}

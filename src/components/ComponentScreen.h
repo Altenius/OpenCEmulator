@@ -171,18 +171,10 @@ public:
 
 
 
-    inline void attachKeyboard(const ComponentPtr &keyboard)
-    {
-        m_keyboards.push_back(ComponentWeakPtr(keyboard));
-    }
+    void attachKeyboard(const ComponentPtr &keyboard);
 
 
-
-    inline void detachKeyboard(const ComponentPtr &keyboard)
-    {
-        std::remove_if(m_keyboards.begin(), m_keyboards.end(),
-                       [keyboard](ComponentWeakPtr &c) { return c.lock() == keyboard; });
-    }
+    void detachKeyboard(const ComponentPtr &keyboard);
 
 
 
