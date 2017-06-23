@@ -50,6 +50,7 @@ InstancePtr Instance::create(size_t maxMemory, const std::string &label, const s
 
 bool Instance::initialize()
 {
+    std::lock_guard<std::mutex> lock(m_mutex);
     ComponentApi componentApi(this);
     ComputerApi computerApi(this);
     OsApi osApi(this);
@@ -96,6 +97,9 @@ bool Instance::initialize()
     m_ticks = 0;
 
     g_stateMap.insert(std::make_pair(m_state->l_G, this));
+    
+    m_initialized = false;
+    m_synchronized = false;
 
     return true;
 }
@@ -133,6 +137,7 @@ void *Instance::allocator(void *ud, void *ptr, size_t osize, size_t nsize)
 
 bool Instance::runSynchronized()
 {
+    std::lock_guard<std::mutex> lock(m_mutex);
     if (m_state == nullptr) {
         return false;
     }
@@ -166,6 +171,7 @@ bool Instance::runSynchronized()
 
 bool Instance::runThreaded(bool synchronizedReturn)
 {
+    std::lock_guard<std::mutex> lock(m_mutex);
     if (m_state == nullptr) {
         return false;
     }
@@ -311,6 +317,7 @@ void Instance::detachComponent(Component *component)
 
 Instance::~Instance()
 {
+    std::lock_guard<std::mutex> lock(m_mutex);
     OpenCEmulator::get().removeComponent(m_computerComponent);
     for (ComponentWeakPtr i : m_components) {
         if (auto component = i.lock()) {
@@ -349,10 +356,10 @@ void Instance::start()
 void Instance::stop()
 {
     if (m_state != nullptr) {
+        std::lock_guard<std::mutex> lock(m_mutex);
         lua_close(m_state);
 
         auto it = g_stateMap.find(m_state->l_G);
-        assert(it != g_stateMap.end());
         if (it != g_stateMap.end()) {
             g_stateMap.erase(it);
         }

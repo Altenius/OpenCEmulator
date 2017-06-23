@@ -10,6 +10,9 @@
 #include <apis/Api.h>
 #include <apis/PersistenceApi.h>
 #include <sstream>
+#include <memory>
+#include <thread>
+#include <mutex>
 #include "Scheduler.h"
 
 class Instance;
@@ -192,7 +195,7 @@ public:
         return m_synchronized || queued();
     }
 
-
+    
 
 protected:
     int m_ticks;
@@ -200,6 +203,7 @@ protected:
     Instance(size_t maxMemory, const std::string &label, const std::string &uuid);
 
 private:
+    std::mutex m_mutex;
     lua_State *m_state, *m_thread;
     size_t m_memoryUsed, m_memoryMax;
     std::vector<ComponentWeakPtr> m_components;
