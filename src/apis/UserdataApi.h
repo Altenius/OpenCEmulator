@@ -2,7 +2,8 @@
 #define OPENCEMULATOR_USERDATAAPI_H
 
 
-class UserdataApi {
+class UserdataApi
+{
 
 };
 

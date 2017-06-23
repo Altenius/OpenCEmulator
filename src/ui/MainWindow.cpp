@@ -9,6 +9,8 @@
 #include "ui_mainwindow.h"
 #include "components/ComponentScreen.h"
 
+
+
 /*
 class MainWindow::Ui {
 public:
@@ -55,38 +57,46 @@ public:
 
 
 
-MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_ui(new Ui::MainWindow) {
+MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_ui(new Ui::MainWindow)
+{
     m_ui->setupUi(this);
 
     // setWindowTitle("OpenCEmulator");
-    
+
     connect(&OpenCEmulator::get(), &OpenCEmulator::componentsChanged, this, &MainWindow::componentsChanged);
 }
 
 
 
-void MainWindow::on_actionManageComponents_triggered() {
+void MainWindow::on_actionManageComponents_triggered()
+{
     m_manageComponents.show();
 }
 
 
 
-void MainWindow::on_actionManageInstances_triggered() {
+void MainWindow::on_actionManageInstances_triggered()
+{
     m_manageInstances.show();
 }
 
 
 
-MainWindow::~MainWindow() {
+MainWindow::~MainWindow()
+{
 
 }
 
 
 
 Q_DECLARE_METATYPE(ComponentWeakPtr);
-void MainWindow::componentsChanged(const std::vector<ComponentPtr> &components) {
+
+
+
+void MainWindow::componentsChanged(const std::vector<ComponentPtr> &components)
+{
     m_ui->listScreens->clear();
-    
+
     for (const ComponentPtr &component : components) {
         if (component->type() == "screen") {
             QListWidgetItem *item = new QListWidgetItem(QString::fromStdString(component->label()), m_ui->listScreens);
@@ -97,22 +107,23 @@ void MainWindow::componentsChanged(const std::vector<ComponentPtr> &components) 
 
 
 
-void MainWindow::on_listScreens_itemActivated(QListWidgetItem *item) {
+void MainWindow::on_listScreens_itemActivated(QListWidgetItem *item)
+{
     if (auto component = item->data(Qt::UserRole).value<ComponentWeakPtr>().lock()) {
         std::shared_ptr<ComponentScreen> screen = std::static_pointer_cast<ComponentScreen>(component);
-        
+
         if (!screen->widget()) {
             ScreensWidgetPtr widget = std::make_shared<ScreensWidget>();
             screen->setWidget(widget);
             widget->setScreen(screen);
-            
+
             auto &keyboards = screen->keyboards();
             if (!keyboards.empty()) {
                 if (auto keyboard = keyboards[0].lock()) {
                     widget->setKeyboard(keyboard);
                 }
             }
-            
+
             widget->show();
         } else {
             screen->widget()->show();
@@ -122,6 +133,7 @@ void MainWindow::on_listScreens_itemActivated(QListWidgetItem *item) {
 
 
 
-void MainWindow::on_actionSaveSession_triggered() {
+void MainWindow::on_actionSaveSession_triggered()
+{
     OpenCEmulator::get().save();
 }

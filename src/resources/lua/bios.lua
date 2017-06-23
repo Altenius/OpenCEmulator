@@ -40,6 +40,7 @@ local function tryLoadFrom(address)
     boot_invoke(address, "close", handle)
     return load(buffer, "=init")
 end
+
 local init, reason
 if computer.getBootAddress() then
     init, reason = tryLoadFrom(computer.getBootAddress())

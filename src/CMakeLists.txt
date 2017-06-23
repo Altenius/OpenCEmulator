@@ -6,7 +6,7 @@ set(OCE_SOURCES
         main.cpp
         OpenCEmulator.cpp
         OpenCEmulator.h
-        
+
         ui/MainWindow.cpp
         ui/MainWindow.h
         ui/ScreensWidget.cpp
@@ -21,16 +21,16 @@ set(OCE_SOURCES
         ui/CreateComponent.h
         ui/ManageInstances.cpp
         ui/ManageInstances.h
-        
+
         FontLoader.cpp
         FontLoader.h
-        
+
         Instance.cpp
         Instance.h
 
         ArgList.cpp
         ArgList.h
-        
+
         apis/ComponentApi.cpp
         apis/ComponentApi.h
         apis/Api.cpp
@@ -69,17 +69,16 @@ set(OCE_SOURCES
         components/ComponentGPU.h
         components/ColorPalette.cpp
         components/ColorPalette.h
-        
+
         Color.cpp
         Color.h
-        
+
         Configuration.cpp
         Configuration.h
         InstancesConfiguration.cpp
         InstancesConfiguration.h
         ComponentsConfiguration.cpp
-        ComponentsConfiguration.h
-        )
+        ComponentsConfiguration.h)
 
 set(OCE_UIS
         ui/mainwindow.ui

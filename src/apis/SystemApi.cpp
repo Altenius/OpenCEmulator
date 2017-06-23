@@ -2,22 +2,26 @@
 #include "SystemApi.h"
 #include "Instance.h"
 
-SystemApi::SystemApi(Instance *instance) : Api(instance) {
-    
+
+
+SystemApi::SystemApi(Instance *instance) : Api(instance)
+{
+
 }
 
 
 
 static const luaL_Reg systemlib[] = {
         {"allowBytecode", SystemApi::lallowBytecode},
-        {"allowGC", SystemApi::lallowGC},
-        {"timeout", SystemApi::ltimeout},
+        {"allowGC",       SystemApi::lallowGC},
+        {"timeout",       SystemApi::ltimeout},
         {NULL, NULL}
 };
 
 
 
-void SystemApi::load() {
+void SystemApi::load()
+{
     lua_State *state = m_instance->state();
 
     luaL_newlib(state, systemlib);
@@ -46,7 +50,8 @@ void SystemApi::load() {
 
 
 
-int SystemApi::lprint(lua_State *state) {
+int SystemApi::lprint(lua_State *state)
+{
     for (int i = 1; i <= lua_gettop(state); i++) {
         if (i != 1) {
             std::cout << "  ";
@@ -86,7 +91,8 @@ int SystemApi::lprint(lua_State *state) {
 
 
 
-int SystemApi::lallowBytecode(lua_State *state) {
+int SystemApi::lallowBytecode(lua_State *state)
+{
     // TODO: Use setting when settings are implemented
     lua_pushboolean(state, false);
     return 1;
@@ -94,7 +100,8 @@ int SystemApi::lallowBytecode(lua_State *state) {
 
 
 
-int SystemApi::lallowGC(lua_State *state) {
+int SystemApi::lallowGC(lua_State *state)
+{
     // TODO: Use setting when settings are implemented
     lua_pushboolean(state, false);
     return 1;
@@ -102,7 +109,8 @@ int SystemApi::lallowGC(lua_State *state) {
 
 
 
-int SystemApi::ltimeout(lua_State *state) {
+int SystemApi::ltimeout(lua_State *state)
+{
     // TODO: Use setting when settings are implemented
     lua_pushnumber(state, 3);
     return 1;

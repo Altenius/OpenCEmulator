@@ -4,26 +4,32 @@
 #include <QDebug>
 #include <iostream>
 
-Scheduler::Scheduler(OpenCEmulator *emulator) : m_emulator(emulator), m_stop(false) {
+
+
+Scheduler::Scheduler(OpenCEmulator *emulator) : m_emulator(emulator), m_stop(false)
+{
 
 }
 
 
 
-void Scheduler::start() {
+void Scheduler::start()
+{
     m_tickThread = std::thread(std::bind(&Scheduler::tick, this));
 }
 
 
 
-void Scheduler::stop() {
+void Scheduler::stop()
+{
     m_stop = true;
     m_tickThread.join();
 }
 
 
 
-void Scheduler::tick() {
+void Scheduler::tick()
+{
     std::vector<InstancePtr> &instances = m_emulator->instances();
     while (!m_stop) {
         for (InstancePtr &instance : instances) {

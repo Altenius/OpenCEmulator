@@ -4,11 +4,13 @@
 #include "lua.hpp"
 
 class Instance;
+
 // The current api system is disgusting
-class Api {
+class Api
+{
 public:
     Api(Instance *instance);
-    
+
     virtual void load() =0;
 
 protected:

@@ -5,19 +5,22 @@
 
 class OpenCEmulator;
 
-class Scheduler {
+class Scheduler
+{
 public:
     Scheduler(OpenCEmulator *emulator);
+
     void start();
+
     void stop();
-    
+
 private:
     void tick();
-    
+
     std::thread m_tickThread;
-    
+
     bool m_stop;
-    
+
     OpenCEmulator *m_emulator;
 };
 

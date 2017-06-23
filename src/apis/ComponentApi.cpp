@@ -2,39 +2,44 @@
 #include "ComponentApi.h"
 #include "../Instance.h"
 
-ComponentApi::ComponentApi(Instance *instance) : Api(instance) {
-    
+
+
+ComponentApi::ComponentApi(Instance *instance) : Api(instance)
+{
+
 }
 
 
 
 static const luaL_Reg componentlib[] = {
-        {"list", ComponentApi::llist},
-        {"type", ComponentApi::ltype},
-        {"slot", ComponentApi::lslot},
+        {"list",    ComponentApi::llist},
+        {"type",    ComponentApi::ltype},
+        {"slot",    ComponentApi::lslot},
         {"methods", ComponentApi::lmethods},
-        {"invoke", ComponentApi::linvoke},
+        {"invoke",  ComponentApi::linvoke},
         {NULL, NULL}
 };
 
 
 
-void ComponentApi::load() {
+void ComponentApi::load()
+{
     lua_State *state = m_instance->state();
-    
+
     luaL_newlib(state, componentlib);
     lua_setglobal(state, "component");
 }
 
 
 
-int ComponentApi::llist(lua_State *state) {
+int ComponentApi::llist(lua_State *state)
+{
     Instance *instance = Instance::fromState(state);
     std::string filter = lua_isstring(state, 1) ? lua_tostring(state, 1) : "";
     bool exact = lua_isboolean(state, 1) ? lua_toboolean(state, 1) == 1 : true;
-    
+
     std::vector<ComponentWeakPtr> &components = instance->components();
-    
+
     lua_createtable(state, 0, components.size());
     for (ComponentWeakPtr &c : components) {
         if (auto component = c.lock()) {
@@ -50,13 +55,14 @@ int ComponentApi::llist(lua_State *state) {
             }
         }
     }
-    
+
     return 1;
 }
 
 
 
-int ComponentApi::ltype(lua_State *state) {
+int ComponentApi::ltype(lua_State *state)
+{
     Instance *instance = Instance::fromState(state);
     std::string address = luaL_checkstring(state, 1);
 
@@ -66,14 +72,15 @@ int ComponentApi::ltype(lua_State *state) {
         lua_pushstring(state, "no such component");
         return 2;
     }
-    
+
     lua_pushstring(state, component->type().data());
     return 1;
 }
 
 
 
-int ComponentApi::lslot(lua_State *state) {
+int ComponentApi::lslot(lua_State *state)
+{
     Instance *instance = Instance::fromState(state);
     std::string address = luaL_checkstring(state, 1);
 
@@ -83,15 +90,16 @@ int ComponentApi::lslot(lua_State *state) {
         lua_pushstring(state, "no such component");
         return 2;
     }
-    
+
     lua_pushnumber(state, -1);
-    
+
     return 1;
 }
 
 
 
-int ComponentApi::lmethods(lua_State *state) {
+int ComponentApi::lmethods(lua_State *state)
+{
     Instance *instance = Instance::fromState(state);
     std::string address = luaL_checkstring(state, 1);
 
@@ -101,9 +109,9 @@ int ComponentApi::lmethods(lua_State *state) {
         lua_pushstring(state, "no such component");
         return 2;
     }
-    
+
     auto &info = component->methodsinfo();
-    
+
     lua_createtable(state, 0, info.size());
     for (auto it = info.begin(); it != info.end(); ++it) {
         lua_pushstring(state, it->first.c_str());
@@ -116,13 +124,14 @@ int ComponentApi::lmethods(lua_State *state) {
         lua_setfield(state, -2, "setter");
         lua_rawset(state, -3);
     }
-    
+
     return 1;
 }
 
 
 
-int ComponentApi::linvoke(lua_State *state) {
+int ComponentApi::linvoke(lua_State *state)
+{
     Instance *instance = Instance::fromState(state);
     std::string address = luaL_checkstring(state, 1);
     std::string method = luaL_checkstring(state, 2);
@@ -134,7 +143,7 @@ int ComponentApi::linvoke(lua_State *state) {
         lua_pushstring(state, "no such component");
         return 2;
     }
-    
+
     auto &methods = component->methods();
     auto it = methods.find(method);
     if (it == methods.end()) {
@@ -142,24 +151,25 @@ int ComponentApi::linvoke(lua_State *state) {
         lua_pushstring(state, "no such method");
         return 2;
     }
-    
+
     ArgList out;
-    
+
     bool res = it->second(args, out);
     lua_pushboolean(state, res);
-    
+
     out.dump(state);
-    
+
     return out.size() + 1;
 }
 
 
 
-int ComponentApi::ldoc(lua_State *state) {
+int ComponentApi::ldoc(lua_State *state)
+{
     Instance *instance = Instance::fromState(state);
     std::string address = luaL_checkstring(state, 1);
     std::string method = luaL_checkstring(state, 2);
-    
+
     ComponentPtr component = getComponent(instance, address);
     if (component == nullptr) {
         lua_pushnil(state);
@@ -174,15 +184,15 @@ int ComponentApi::ldoc(lua_State *state) {
         lua_pushstring(state, "no such method");
         return 2;
     }
-    
+
     lua_pushstring(state, it->second.doc.c_str());
     return 1;
 }
 
 
 
-
-ComponentPtr ComponentApi::getComponent(Instance *instance, const std::string &address) {
+ComponentPtr ComponentApi::getComponent(Instance *instance, const std::string &address)
+{
     std::vector<ComponentWeakPtr> &components = instance->components();
     auto it = std::find_if(components.begin(), components.end(), [address](ComponentWeakPtr &c) -> bool {
         if (auto comp = c.lock()) {

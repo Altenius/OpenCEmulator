@@ -5,7 +5,8 @@
 
 
 
-void InstancesConfiguration::initialize() {
+void InstancesConfiguration::initialize()
+{
     if (!load(OpenCEmulator::get().baseDirectory() + "/instances.json")) {
         std::ofstream file(OpenCEmulator::get().baseDirectory() + "/instances.json");
         if (!file.is_open()) {
@@ -19,16 +20,17 @@ void InstancesConfiguration::initialize() {
 
 
 
-void InstancesConfiguration::readConfig(rapidjson::Document &d) {
+void InstancesConfiguration::readConfig(rapidjson::Document &d)
+{
     for (auto &v : d.GetObject()) {
         if (!v.value.IsObject()) {
             std::cerr << "error: non-object located in instances array in instances.json" << std::endl;
             continue;
         }
-        
+
         std::vector<std::string> components;
         std::string label;
-        
+
         for (auto &member : v.value.GetObject()) {
             std::string name = member.name.GetString();
             if (name == "components") {
@@ -36,10 +38,12 @@ void InstancesConfiguration::readConfig(rapidjson::Document &d) {
                     std::cerr << "error: 'components' in an instance in instances.json is not an array" << std::endl;
                     continue;
                 }
-                
+
                 for (auto &component : member.value.GetArray()) {
                     if (!component.IsString()) {
-                        std::cerr << "error: component in component section of an instance in instances.json is not a string" << std::endl;
+                        std::cerr
+                                << "error: component in component section of an instance in instances.json is not a string"
+                                << std::endl;
                         continue;
                     }
                     components.push_back(component.GetString());
@@ -50,19 +54,20 @@ void InstancesConfiguration::readConfig(rapidjson::Document &d) {
                 }
             }
         }
-        
+
         m_instances.push_back(InstanceConfig(v.name.GetString(), label, std::move(components)));
     }
 }
 
 
 
-void InstancesConfiguration::saveConfig(std::vector<InstancePtr> instances) {
+void InstancesConfiguration::saveConfig(std::vector<InstancePtr> instances)
+{
     rapidjson::Document d(rapidjson::kObjectType);
-    
+
     for (InstancePtr &instance : instances) {
         rapidjson::Value instanceData(rapidjson::kObjectType);
-        
+
         rapidjson::Value components(rapidjson::kArrayType);
         for (ComponentWeakPtr c : instance->components()) {
             if (auto component = c.lock()) {
@@ -76,7 +81,7 @@ void InstancesConfiguration::saveConfig(std::vector<InstancePtr> instances) {
                 components.PushBack(uuid.Move(), d.GetAllocator());
             }
         }
-        
+
         instanceData.AddMember("components", components, d.GetAllocator());
 
         const std::string &sLabel = instance->label();
@@ -85,12 +90,12 @@ void InstancesConfiguration::saveConfig(std::vector<InstancePtr> instances) {
             label.SetString(sLabel.c_str(), sLabel.length(), d.GetAllocator());
             instanceData.AddMember("label", label, d.GetAllocator());
         }
-        
+
         rapidjson::Value uuid(rapidjson::kStringType);
         const std::string &sUuid = instance->address();
         uuid.SetString(sUuid.c_str(), sUuid.length(), d.GetAllocator());
-        
-        
+
+
         d.AddMember(uuid, instanceData, d.GetAllocator());
     }
 

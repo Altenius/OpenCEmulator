@@ -13,92 +13,166 @@
 #include "Scheduler.h"
 
 class Instance;
+
 typedef std::shared_ptr<Instance> InstancePtr;
 typedef std::weak_ptr<Instance> InstanceWeakPtr;
 
-class Instance {
+class Instance
+{
     friend Scheduler;
 public:
     Instance(size_t maxMemory, const std::string &label = std::string(), const std::string &uuid = std::string());
+
     ~Instance();
-    
-    bool initialize();
+
+    /* Resumes the instance. Called internally from the scheduler */
     bool run();
-    bool runSynchronized();
-    bool runThreaded(bool synchronizedReturn = false);
-    
-    inline lua_State *thread() {
+
+
+
+    /* Returns the Lua thread */
+    inline lua_State *thread()
+    {
         return m_thread;
     }
-    
-    inline lua_State *state() {
+
+
+
+    /* Returns the Lua state */
+    inline lua_State *state()
+    {
         return m_state;
     }
-    
-    inline std::vector<ComponentWeakPtr> &components() {
+
+
+
+    /* Returns the list of components for iterating. lock() should
+     * be called on each entry to get a ComponentPtr and checked. */
+    inline std::vector<ComponentWeakPtr> &components()
+    {
         return m_components;
     }
-    
-    inline const std::string &address() {
+
+
+
+    /* Returns the address of the instance */
+    inline const std::string &address()
+    {
         return m_uuid;
     }
-    
-    inline lua_Number uptime() {
-        // This function should count ticks, not actual seconds
-        return static_cast<lua_Integer>(cpuTime() * 20);
-    }
-    
-    inline lua_Number cpuTime() {
+
+
+
+    /* Returns the amount of time in milliseconds that the
+     * instance has been running */
+    inline lua_Number cpuTime()
+    {
         return (static_cast<float>((std::chrono::system_clock::now() - m_startTime).count())
                 * std::chrono::system_clock::period::num / std::chrono::system_clock::period::den);
     }
-    
+
+
+
+    /* Starts the instance */
     void start();
+
+    /* Stops the instance */
     void stop();
-    
+
+    /* Attaches a component to the instance.
+     * component->attachInstance should also be called */
     void attachComponent(ComponentPtr component);
+
+    /* Detaches a component from the instance.
+     * component->detachInstance should also be called */
     void detachComponent(ComponentPtr component);
+
     void detachComponent(Component *component);
-    
-    
-    inline size_t memoryUsed() {
+
+
+
+    /* Returns the amount of memory used by the lua state */
+    inline size_t memoryUsed()
+    {
         return m_memoryUsed;
     }
-    
-    inline size_t memoryMax() {
+
+
+
+    /* Returns the amount of memory allowed to be allocated for
+     * the lua state */
+    inline size_t memoryMax()
+    {
         return m_memoryMax;
     }
-    
-    inline bool sleeping() {
+
+
+
+    /* Returns true if the instance is sleeping. The instance
+     * sleeps when waiting a specific amount of m_ticks or for
+     * an event */
+    inline bool sleeping()
+    {
         return m_sleeping;
     }
-    
-    inline const std::string &label() {
+
+
+
+    /* Returns the label of the instance or the address if it
+     * is not labeled */
+    inline const std::string &label()
+    {
         if (m_label.empty()) {
             return m_uuid;
         }
         return m_label;
     }
-    
-    inline void setLabel(const std::string &label) {
+
+
+
+    /* Sets the label of the instance */
+    inline void setLabel(const std::string &label)
+    {
         m_label = label;
     }
-    
-    inline bool synchronized() {
+
+
+
+    /* Returns true if the instance is waiting for a synchronized
+     * call. This is where OpenComputers calls a lua function from
+     * the main thread. */
+    inline bool synchronized()
+    {
         return m_synchronized;
     }
 
-    inline bool queued() {
+
+
+    /* Returns true if there are signals ready to be sent to the
+     * instance */
+    inline bool queued()
+    {
         return !m_signalQueue.empty();
     }
-    
-    std::string lastError() {
+
+
+
+    /* Returns the last error that occurred */
+    std::string lastError()
+    {
         return m_errorStream.str();
     }
-    
+
+
+
+    /* Queues a signal to be transmitted to the instance */
     bool signal(const std::string &name, ArgList args);
-    
-    inline bool shouldRun() {
+
+
+
+    /* Returns true if the instance is ready to run. */
+    inline bool shouldRun()
+    {
         if (m_state == nullptr) {
             return false;
         }
@@ -108,9 +182,11 @@ public:
         return m_synchronized || queued();
     }
 
+
+
 protected:
     int m_ticks;
-    
+
 private:
     lua_State *m_state, *m_thread;
     size_t m_memoryUsed, m_memoryMax;
@@ -118,24 +194,38 @@ private:
     bool m_initialized;
     std::chrono::system_clock::time_point m_startTime;
     std::string m_uuid, m_label;
-    
+
     std::stringstream m_errorStream;
-    
+
     bool m_sleeping = false;
     bool m_synchronized = false;
 
     PersistenceApi m_persistenceApi;
 
     static void *allocator(void *ud, void *ptr, size_t osize, size_t nsize);
-    
-    static std::unordered_map<global_State*, Instance*> g_stateMap;
-    
+
+    static std::unordered_map<global_State *, Instance *> g_stateMap;
+
     std::queue<std::pair<std::string, ArgList> > m_signalQueue;
-    
+
+    /* Resumes the instance until the signal queue is empty. */
     bool runLoop();
-    
+
+    /* Initializes the instance. Called internally from start(). */
+    bool initialize();
+
+    /* Resumes the instance for a synchronized call. Called
+     * internally from run(). */
+    bool runSynchronized();
+
+    /* Resumes the instance. If synchronizedReturn is true, pushes
+     * the result of the synchronized call. */
+    bool runThreaded(bool synchronizedReturn = false);
+
 public:
-    static inline Instance* fromState(lua_State *state) {
+    /* Returns the instance from the state-to-instance map */
+    static inline Instance *fromState(lua_State *state)
+    {
         auto it = g_stateMap.find(state->l_G);
         if (it == g_stateMap.end()) {
             return nullptr;

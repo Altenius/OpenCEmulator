@@ -3,29 +3,33 @@
 #include "UnicodeApi.h"
 #include "Instance.h"
 
-UnicodeApi::UnicodeApi(Instance *instance) : Api(instance) {
-    
+
+
+UnicodeApi::UnicodeApi(Instance *instance) : Api(instance)
+{
+
 }
 
 
 
 static const luaL_Reg unicodelib[] = {
-        {"char", UnicodeApi::lchar},
-        {"len", UnicodeApi::llen},
-        {"lower", UnicodeApi::llower},
-        {"reverse", UnicodeApi::lreverse},
-        {"sub", UnicodeApi::lsub},
-        {"upper", UnicodeApi::lupper},
-        {"isWide", UnicodeApi::lisWide},
+        {"char",      UnicodeApi::lchar},
+        {"len",       UnicodeApi::llen},
+        {"lower",     UnicodeApi::llower},
+        {"reverse",   UnicodeApi::lreverse},
+        {"sub",       UnicodeApi::lsub},
+        {"upper",     UnicodeApi::lupper},
+        {"isWide",    UnicodeApi::lisWide},
         {"charWidth", UnicodeApi::lcharWidth},
-        {"wlen", UnicodeApi::lwlen},
-        {"wtrunc", UnicodeApi::lwtrunc},
+        {"wlen",      UnicodeApi::lwlen},
+        {"wtrunc",    UnicodeApi::lwtrunc},
         {NULL, NULL}
 };
 
 
 
-void UnicodeApi::load() {
+void UnicodeApi::load()
+{
     lua_State *state = m_instance->state();
 
     luaL_newlib(state, unicodelib);
@@ -34,36 +38,40 @@ void UnicodeApi::load() {
 
 
 
-int UnicodeApi::lchar(lua_State *state) {
+int UnicodeApi::lchar(lua_State *state)
+{
     QString string;
     for (int i = 1; i <= lua_gettop(state); i++) {
         string.append(QChar(luaL_checkint(state, i)));
     }
-    
+
     pushQString(state, string);
     return 1;
 }
 
 
 
-int UnicodeApi::llen(lua_State *state) {
+int UnicodeApi::llen(lua_State *state)
+{
     lua_pushinteger(state, checkQString(state, 1).length());
-    
+
     return 1;
 }
 
 
 
-int UnicodeApi::llower(lua_State *state) {
+int UnicodeApi::llower(lua_State *state)
+{
     QString string = checkQString(state, 1).toLower();
-    
+
     pushQString(state, string);
     return 1;
 }
 
 
 
-int UnicodeApi::lreverse(lua_State *state) {
+int UnicodeApi::lreverse(lua_State *state)
+{
     QString string = checkQString(state, 1);
     std::reverse(string.begin(), string.end());
     pushQString(state, string);
@@ -72,7 +80,8 @@ int UnicodeApi::lreverse(lua_State *state) {
 
 
 
-int UnicodeApi::lsub(lua_State *state) {
+int UnicodeApi::lsub(lua_State *state)
+{
     QString string = checkQString(state, 1);
     int start = luaL_checkint(state, 2);
     if (start < 0) {
@@ -81,7 +90,7 @@ int UnicodeApi::lsub(lua_State *state) {
         start--;
     }
     start = std::max(0, start);
-    
+
     int end;
     if (lua_gettop(state) > 2) {
         end = luaL_checkint(state, 3);
@@ -92,20 +101,21 @@ int UnicodeApi::lsub(lua_State *state) {
     } else {
         end = string.length();
     }
-    
+
     if (end <= start) {
         lua_pushstring(state, "");
     } else {
         QByteArray data = QStringRef(&string, start, end - start).toUtf8();
         lua_pushlstring(state, data.data(), data.size());
     }
-    
+
     return 1;
 }
 
 
 
-int UnicodeApi::lupper(lua_State *state) {
+int UnicodeApi::lupper(lua_State *state)
+{
     QString string = checkQString(state, 1);
     pushQString(state, string.toUpper());
     return 1;
@@ -113,27 +123,30 @@ int UnicodeApi::lupper(lua_State *state) {
 
 
 
-int UnicodeApi::lisWide(lua_State *state) {
+int UnicodeApi::lisWide(lua_State *state)
+{
     QString string = checkQString(state, 1);
-    
+
     lua_pushboolean(state, FontLoader::get().width(static_cast<const int>(string.at(0).unicode())) > 1);
     return 1;
 }
 
 
 
-int UnicodeApi::lcharWidth(lua_State *state) {
+int UnicodeApi::lcharWidth(lua_State *state)
+{
     QString string = checkQString(state, 1);
-    
+
     lua_pushinteger(state, FontLoader::get().width(static_cast<const int>(string.at(0).unicode())));
     return 1;
 }
 
 
 
-int UnicodeApi::lwlen(lua_State *state) {
+int UnicodeApi::lwlen(lua_State *state)
+{
     QString string = checkQString(state, 1);
-    
+
     int sum = 0;
     for (auto it = string.begin(); it != string.end(); it++) {
         sum += FontLoader::get().width(static_cast<const int>((*it).unicode()));
@@ -144,7 +157,8 @@ int UnicodeApi::lwlen(lua_State *state) {
 
 
 
-int UnicodeApi::lwtrunc(lua_State *state) {
+int UnicodeApi::lwtrunc(lua_State *state)
+{
     QString string = checkQString(state, 1);
     int count = luaL_checkint(state, 2);
     if (count <= 0) {

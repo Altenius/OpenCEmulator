@@ -11,7 +11,15 @@
 #include <iostream>
 #include <cassert>
 
-Instance::Instance(size_t maxMemory, const std::string &label, const std::string &uuid) : m_label(label), m_memoryMax(maxMemory), m_memoryUsed(0), m_initialized(false), m_persistenceApi(this), m_uuid(uuid) {
+
+
+Instance::Instance(size_t maxMemory, const std::string &label, const std::string &uuid) : m_label(label),
+                                                                                          m_memoryMax(maxMemory),
+                                                                                          m_memoryUsed(0),
+                                                                                          m_initialized(false),
+                                                                                          m_persistenceApi(this),
+                                                                                          m_uuid(uuid)
+{
     if (m_uuid.empty()) {
         m_uuid = QUuid::createUuid().toString().toStdString();
         m_uuid.erase(m_uuid.begin());
@@ -21,34 +29,35 @@ Instance::Instance(size_t maxMemory, const std::string &label, const std::string
 
 
 
-bool Instance::initialize() {
+bool Instance::initialize()
+{
     m_state = lua_newstate(allocator, this);
     if (m_state == nullptr) {
         qWarning() << "Out of memory";
         return false;
     }
-    
+
     ComponentApi componentApi(this);
     ComputerApi computerApi(this);
     OsApi osApi(this);
     SystemApi systemApi(this);
     UnicodeApi unicodeApi(this);
-    
+
     componentApi.load();
     computerApi.load();
     osApi.load();
     m_persistenceApi.load();
     systemApi.load();
     unicodeApi.load();
-    
+
     m_thread = lua_newthread(m_state);
-    
+
     QFile machineFile(":/lua/machine.lua");
     if (!machineFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
         qWarning() << "Could not open machine.lua:" << machineFile.errorString();
         return false;
     }
-    
+
     int err;
     if ((err = luaL_loadstring(m_thread, machineFile.readAll().data())) != LUA_OK) {
         if (err == LUA_ERRSYNTAX) {
@@ -63,20 +72,21 @@ bool Instance::initialize() {
     }
 
     g_stateMap.insert(std::make_pair(m_state->l_G, this));
-    
+
     m_startTime = std::chrono::system_clock::now();
-    
+
     m_sleeping = true;
     m_ticks = 0;
-    
+
     return true;
 }
 
 
 
-void *Instance::allocator(void *ud, void *ptr, size_t osize, size_t nsize) {
-    Instance *instance = (Instance*)ud;
-    
+void *Instance::allocator(void *ud, void *ptr, size_t osize, size_t nsize)
+{
+    Instance *instance = (Instance *) ud;
+
     if (nsize > osize) {
         instance->m_memoryUsed += nsize - osize;
         if (instance->m_memoryUsed > instance->m_memoryMax) {
@@ -91,7 +101,7 @@ void *Instance::allocator(void *ud, void *ptr, size_t osize, size_t nsize) {
             instance->m_memoryUsed -= diff;
         }
     }
-    
+
     if (nsize == 0) {
         free(ptr);
         return NULL;
@@ -102,13 +112,14 @@ void *Instance::allocator(void *ud, void *ptr, size_t osize, size_t nsize) {
 
 
 
-bool Instance::runSynchronized() {
+bool Instance::runSynchronized()
+{
     if (m_state == nullptr) {
         return false;
     }
     assert(lua_gettop(m_thread) == 1);
     assert(lua_isfunction(m_thread, 1));
-    
+
     int res = lua_pcall(m_thread, 0, 1, 0);
     if (res != LUA_OK) {
         // TODO: set some error to return in some stringError() method
@@ -121,20 +132,21 @@ bool Instance::runSynchronized() {
         }
         return false;
     }
-    
+
     if (!lua_istable(m_thread, 1)) {
         // TODO: set some error to return in some stringError() method
         m_errorStream.str("");
         m_errorStream << "Synchronized function failed: a table was not returned";
         return false;
     }
-    
+
     return true;
 }
 
 
 
-bool Instance::runThreaded(bool synchronizedReturn) {
+bool Instance::runThreaded(bool synchronizedReturn)
+{
     if (m_state == nullptr) {
         return false;
     }
@@ -163,7 +175,7 @@ bool Instance::runThreaded(bool synchronizedReturn) {
         }
     }
 
-    switch(res) {
+    switch (res) {
         case LUA_YIELD: {
             int top = lua_gettop(m_thread);
             if (top == 1) {
@@ -206,23 +218,25 @@ bool Instance::runThreaded(bool synchronizedReturn) {
 
 
 
-bool Instance::runLoop() {
+bool Instance::runLoop()
+{
     m_sleeping = false;
     do {
         if (!runThreaded()) {
             return false;
         }
     } while (queued() && !m_synchronized);
-    
+
     return true;
 }
 
 
 
-bool Instance::run() {
+bool Instance::run()
+{
     if (m_synchronized) {
         m_synchronized = false;
-        
+
         if (!runSynchronized()) {
             return false;
         }
@@ -233,13 +247,14 @@ bool Instance::run() {
             return true;
         }
     }
-    
+
     return runLoop();
 }
 
 
 
-void Instance::attachComponent(ComponentPtr component) {
+void Instance::attachComponent(ComponentPtr component)
+{
     for (ComponentWeakPtr i : m_components) {
         if (i.lock() == component) {
             return;
@@ -251,7 +266,8 @@ void Instance::attachComponent(ComponentPtr component) {
 
 
 
-void Instance::detachComponent(ComponentPtr component) {
+void Instance::detachComponent(ComponentPtr component)
+{
     for (auto it = m_components.begin(); it != m_components.end(); ++it) {
         if (it->lock() == component) {
             m_components.erase(it);
@@ -262,7 +278,8 @@ void Instance::detachComponent(ComponentPtr component) {
 
 
 
-void Instance::detachComponent(Component *component) {
+void Instance::detachComponent(Component *component)
+{
     for (auto it = m_components.begin(); it != m_components.end(); ++it) {
         if (it->lock().get() == component) {
             m_components.erase(it);
@@ -273,14 +290,15 @@ void Instance::detachComponent(Component *component) {
 
 
 
-Instance::~Instance() {
+Instance::~Instance()
+{
     for (ComponentWeakPtr i : m_components) {
         if (auto component = i.lock()) {
             component->detach(this);
         }
     }
-    
-    if (m_initialized) {
+
+    if (m_state != nullptr) {
         auto it = g_stateMap.find(m_state->l_G);
         assert(it != g_stateMap.end());
         if (it != g_stateMap.end()) {
@@ -291,14 +309,16 @@ Instance::~Instance() {
 
 
 
-bool Instance::signal(const std::string &name, ArgList args) {
+bool Instance::signal(const std::string &name, ArgList args)
+{
     m_signalQueue.push(std::make_pair(name, args));
     return true;
 }
 
 
 
-void Instance::start() {
+void Instance::start()
+{
     if (!initialize()) {
         std::cerr << "failed to initialize instance" << std::endl;
     }
@@ -306,14 +326,20 @@ void Instance::start() {
 
 
 
-void Instance::stop() {
+void Instance::stop()
+{
     if (m_state != nullptr) {
         lua_close(m_state);
         m_state = nullptr;
-        m_initialized = false;
+
+        auto it = g_stateMap.find(m_state->l_G);
+        assert(it != g_stateMap.end());
+        if (it != g_stateMap.end()) {
+            g_stateMap.erase(it);
+        }
     }
 }
 
 
 
-std::unordered_map<global_State*, Instance*> Instance::g_stateMap;
+std::unordered_map<global_State *, Instance *> Instance::g_stateMap;

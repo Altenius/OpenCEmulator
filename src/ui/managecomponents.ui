@@ -78,7 +78,7 @@
                             <item>
                                 <widget class="QLabel" name="label">
                                     <property name="text">
-                                        <string>Selected Component: </string>
+                                        <string>Selected Component:</string>
                                     </property>
                                     <property name="alignment">
                                         <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>

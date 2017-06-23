@@ -1,9 +1,15 @@
 #include "Api.h"
 
-Api::Api(Instance *instance) : m_instance(instance) {
-    
+
+
+Api::Api(Instance *instance) : m_instance(instance)
+{
+
 }
 
-void Api::load() {
-    
+
+
+void Api::load()
+{
+
 }

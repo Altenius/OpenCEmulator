@@ -3,18 +3,22 @@
 #include "Instance.h"
 
 extern "C" {
-    #include "eris.h"
-}
-
-PersistenceApi::PersistenceApi(Instance *instance) : Api(instance) {
-    
+#include "eris.h"
 }
 
 
 
-void PersistenceApi::load() {
+PersistenceApi::PersistenceApi(Instance *instance) : Api(instance)
+{
+
+}
+
+
+
+void PersistenceApi::load()
+{
     lua_State *state = m_instance->state();
-    
+
     lua_pushcfunction(state, PersistenceApi::lpersistKey);
     lua_setglobal(state, "persistKey");
 
@@ -72,7 +76,7 @@ void PersistenceApi::load() {
                         }
                     }
 
-                    std::sort(childKeys.begin(), childKeys.end(), [](QString a, QString b) {return a < b; });
+                    std::sort(childKeys.begin(), childKeys.end(), [](QString a, QString b) { return a < b; });
 
                     for (auto it = childKeys.constBegin(); it != childKeys.constEnd(); ++it) {
                         lua_pushstring(state, (key + "." + (*it)).toUtf8().data()); // k v ck
@@ -94,17 +98,19 @@ void PersistenceApi::load() {
 
 
 
-int PersistenceApi::lpersistKey(lua_State *state) {
+int PersistenceApi::lpersistKey(lua_State *state)
+{
     lua_pushstring(state, "__persistthisistotallyauuid");
     return 1;
 }
 
 
 
-void PersistenceApi::persist(QVector<uchar> &vector) {
+void PersistenceApi::persist(QVector<uchar> &vector)
+{
     // TODO: stop garbage collection
     lua_State *state = m_instance->state();
-    
+
     lua_getfield(state, LUA_REGISTRYINDEX, "perms");
     lua_pushvalue(state, 1); // index 1 is always the kernel thread
 
@@ -118,32 +124,36 @@ void PersistenceApi::persist(QVector<uchar> &vector) {
 
 
 
-void PersistenceApi::unpersist(const QVector<uchar> &vector) {
+void PersistenceApi::unpersist(const QVector<uchar> &vector)
+{
     // TODO: stop garbage collection
     configure();
     lua_State *state = m_instance->state();
-    
+
     lua_getfield(state, LUA_REGISTRYINDEX, "uperms");
-    lua_pushlstring(state, (const char*)vector.data(), vector.size());
+    lua_pushlstring(state, (const char *) vector.data(), vector.size());
     eris_unpersist(state, -2, -1);
     lua_insert(state, -3);
     lua_pop(state, 2);
 }
 
-void PersistenceApi::configure() {
+
+
+void PersistenceApi::configure()
+{
     lua_State *state = m_instance->state();
-    
+
     lua_getglobal(state, "eris");
-    
+
     lua_getfield(state, -1, "settings");
     lua_pushstring(state, "spkey");
     lua_pushstring(state, "__persistthisistotallyauuid");
     lua_call(state, 2, 0);
-    
+
     lua_getfield(state, -1, "settings");
     lua_pushstring(state, "path");
     lua_pushboolean(state, false);
     lua_call(state, 2, 0);
-    
+
     lua_pop(state, 1);
 }

@@ -3,62 +3,73 @@
 #include <iostream>
 #include "ArgList.h"
 
-Argument::Argument(const char *str) : m_type(STRING), m_string(str) {
+
+
+Argument::Argument(const char *str) : m_type(STRING), m_string(str)
+{
 
 }
 
 
 
-Argument::Argument(double number) : m_type(NUMBER), m_number(number) {
+Argument::Argument(double number) : m_type(NUMBER), m_number(number)
+{
 
 }
 
 
 
-Argument::Argument(bool boolean) : m_type(BOOLEAN), m_boolean(boolean) {
+Argument::Argument(bool boolean) : m_type(BOOLEAN), m_boolean(boolean)
+{
 
 }
 
 
 
-Argument::Argument() : m_type(NIL) {
+Argument::Argument() : m_type(NIL)
+{
 
 }
 
 
 
-Argument::Argument(const std::string &string) : m_type(STRING), m_string(string) {
+Argument::Argument(const std::string &string) : m_type(STRING), m_string(string)
+{
 
 }
 
 
 
-Argument::Argument(const char *str, size_t length) : m_type(STRING), m_string(str, length) {
+Argument::Argument(const char *str, size_t length) : m_type(STRING), m_string(str, length)
+{
 
 }
 
 
 
-Argument::Argument(long long number) : m_type(INTEGER), m_integer(number) {
+Argument::Argument(long long number) : m_type(INTEGER), m_integer(number)
+{
 
 }
 
 
 
-std::string Argument::string() const {
+std::string Argument::string() const
+{
     if (m_type == NUMBER) {
         return std::to_string(m_number);
     } else if (m_type == INTEGER) {
         return std::to_string(m_integer);
     }
-    
+
     return m_string;
 }
 
 
 
-std::string Argument::typeName() const {
-    switch(m_type) {
+std::string Argument::typeName() const
+{
+    switch (m_type) {
         case STRING:
             return "string";
         case NUMBER:
@@ -73,8 +84,11 @@ std::string Argument::typeName() const {
     }
 }
 
-void Argument::dump(lua_State *state) const {
-    switch(m_type) {
+
+
+void Argument::dump(lua_State *state) const
+{
+    switch (m_type) {
         case Argument::STRING:
             lua_pushlstring(state, m_string.c_str(), m_string.size());
             break;
@@ -106,25 +120,26 @@ void Argument::dump(lua_State *state) const {
 
 
 
-Argument::Argument(std::vector<Argument> &&array) : m_type(ARRAY), m_array(std::move(array)) {
+Argument::Argument(std::vector<Argument> &&array) : m_type(ARRAY), m_array(std::move(array))
+{
 
 }
 
 
 
-Argument::Argument(const std::vector<Argument> &array) : m_type(ARRAY), m_array(array) {
+Argument::Argument(const std::vector<Argument> &array) : m_type(ARRAY), m_array(array)
+{
 
 }
 
 
 
-
-
-ArgList::ArgList(lua_State *state, int stackPos) {
+ArgList::ArgList(lua_State *state, int stackPos)
+{
     int top = lua_gettop(state);
     for (int i = stackPos; i <= top; i++) {
         int type = lua_type(state, i);
-        switch(type) {
+        switch (type) {
             case LUA_TNUMBER:
                 m_arguments.push_back(Argument(lua_tonumber(state, i)));
                 break;
@@ -146,11 +161,13 @@ ArgList::ArgList(lua_State *state, int stackPos) {
 
 
 
-void ArgList::dump(lua_State *state) const {
+void ArgList::dump(lua_State *state) const
+{
     for (auto it = m_arguments.begin(); it != m_arguments.end(); ++it) {
         (*it).dump(state);
     }
 }
+
 
 
 /*
@@ -202,19 +219,22 @@ bool ArgList::toint(int idx, int &out) {
 
 
 
-ArgList::ArgList() {
+ArgList::ArgList()
+{
 
 }
 
 
 
-ArgList::ArgList(const Argument &arg) {
+ArgList::ArgList(const Argument &arg)
+{
     m_arguments.push_back(arg);
 }
 
 
 
-void ArgList::typeError(int index, const std::string &have, const std::string &want, ArgList &aout) const {
+void ArgList::typeError(int index, const std::string &have, const std::string &want, ArgList &aout) const
+{
     std::stringstream err;
     err << "bad argument #" << (index + 3) << " (" << want << " expected, got " << have << ")";
     aout.add(err.str());
@@ -222,7 +242,8 @@ void ArgList::typeError(int index, const std::string &have, const std::string &w
 
 
 
-bool ArgList::checkString(int idx, std::string &out, ArgList &aout) const {
+bool ArgList::checkString(int idx, std::string &out, ArgList &aout) const
+{
     if (m_arguments.size() <= idx || idx < 0) {
         typeError(idx, "no value", "string", aout);
         return false;
@@ -232,33 +253,35 @@ bool ArgList::checkString(int idx, std::string &out, ArgList &aout) const {
     if (!arg.isstring()) {
         typeError(idx, arg.typeName(), "string", aout);
     }
-    
+
     out = m_arguments[idx].string();
-    
+
     return true;
 }
 
 
 
-bool ArgList::checkNumber(int idx, double &out, ArgList &aout) const {
+bool ArgList::checkNumber(int idx, double &out, ArgList &aout) const
+{
     if (m_arguments.size() <= idx || idx < 0) {
         typeError(idx, "no value", "number", aout);
         return false;
     }
-    
+
     const Argument &arg = m_arguments[idx];
     if (!arg.isnumber()) {
         typeError(idx, arg.typeName(), "number", aout);
     }
-    
+
     out = arg.number();
-    
+
     return true;
 }
 
 
 
-bool ArgList::checkInt(int idx, int &out, ArgList &aout) const {
+bool ArgList::checkInt(int idx, int &out, ArgList &aout) const
+{
     if (m_arguments.size() <= idx || idx < 0) {
         typeError(idx, "no value", "number", aout);
         return false;
@@ -276,7 +299,8 @@ bool ArgList::checkInt(int idx, int &out, ArgList &aout) const {
 
 
 
-bool ArgList::checkLong(int idx, long long &out, ArgList &aout) const {
+bool ArgList::checkLong(int idx, long long &out, ArgList &aout) const
+{
     if (m_arguments.size() <= idx || idx < 0) {
         typeError(idx, "no value", "number", aout);
         return false;
@@ -294,7 +318,8 @@ bool ArgList::checkLong(int idx, long long &out, ArgList &aout) const {
 
 
 
-bool ArgList::checkBoolean(int idx, bool &out, ArgList &aout) const {
+bool ArgList::checkBoolean(int idx, bool &out, ArgList &aout) const
+{
     if (m_arguments.size() <= idx || idx < 0) {
         typeError(idx, "no value", "boolean", aout);
         return false;
