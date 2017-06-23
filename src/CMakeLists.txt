@@ -102,4 +102,3 @@ set(CMAKE_AUTOMOC ON)
 
 add_executable(OpenCEmulator ${OCE_SOURCES} ${OCE_UI} ${OCE_RESOURCES})
 target_link_libraries(OpenCEmulator Eris Qt5::Widgets ${CMAKE_THREAD_LIBS_INIT})
-include_directories(../lib/rapidjson/include)

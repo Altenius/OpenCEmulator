@@ -35,4 +35,9 @@ find_package(Qt5Widgets)
 find_package(Threads)
 
 add_subdirectory(lib/eris)
+
+set(RAPIDJSON_BUILD_TESTS off)
+
+add_subdirectory(lib/rapidjson)
+include_directories(lib/rapidjson/include)
 add_subdirectory(src)

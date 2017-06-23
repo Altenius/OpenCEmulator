@@ -3,4 +3,4 @@
 	url = https://github.com/Altenius/eris.git
 [submodule "lib/rapidjson"]
 	path = lib/rapidjson
-	url = https://github.com/TencentOpen/rapidjson.git
+	url = https://github.com/miloyip/rapidjson.git
