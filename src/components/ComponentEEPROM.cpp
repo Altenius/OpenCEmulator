@@ -11,7 +11,7 @@ ComponentEEPROM::ComponentEEPROM(const std::string &uuid, const std::string &lab
 {
     QFile defaultRom(":/lua/bios.lua");
     if (!defaultRom.open(QIODevice::ReadOnly)) {
-        qWarning() << "Could not open bios.lua";
+        std::cerr << "Could not open bios.lua" << std::endl;
     }
 
     QByteArray data = defaultRom.readAll();

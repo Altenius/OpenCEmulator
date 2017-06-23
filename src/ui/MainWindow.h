@@ -22,14 +22,8 @@ public:
 
 private:
     Ui::MainWindow *m_ui;
-    ManageComponents m_manageComponents;
-    ManageInstances m_manageInstances;
 
 private slots:
-
-    void on_actionManageInstances_triggered();
-
-    void on_actionManageComponents_triggered();
 
     void on_actionSaveSession_triggered();
 

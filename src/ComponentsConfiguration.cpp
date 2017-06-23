@@ -86,7 +86,7 @@ void ComponentsConfiguration::saveConfig(const std::vector<ComponentPtr> &compon
         if (!extra.empty()) {
             rapidjson::Value extraV(rapidjson::kStringType);
             extraV.SetString(extra.c_str(), extra.length(), d.GetAllocator());
-            componentData.AddMember("extra", extraV, d.GetAllocator());
+            componentData.AddMember("data", extraV, d.GetAllocator());
         }
 
         const std::string &label = component->label();

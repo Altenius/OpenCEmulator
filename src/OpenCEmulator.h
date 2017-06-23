@@ -91,14 +91,15 @@ signals:
 
 private:
     MainWindow *m_mainWindow = nullptr;
-    std::vector<InstancePtr> m_instances;
-    std::vector<ComponentPtr> m_components;
     Scheduler m_scheduler;
     std::string m_baseDirectory;
     std::string m_filesystemDirectory;
 
     InstancesConfiguration m_instancesConfig;
     ComponentsConfiguration m_componentsConfig;
+
+    std::vector<ComponentPtr> m_components;
+    std::vector<InstancePtr> m_instances;
 
     /* Loads the components from components.json. */
     void loadComponents();

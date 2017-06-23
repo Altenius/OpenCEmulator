@@ -21,7 +21,8 @@ class Instance
 {
     friend Scheduler;
 public:
-    Instance(size_t maxMemory, const std::string &label = std::string(), const std::string &uuid = std::string());
+    static InstancePtr
+    create(size_t maxMemory, const std::string &label = std::string(), const std::string &uuid = std::string());
 
     ~Instance();
 
@@ -59,6 +60,14 @@ public:
     inline const std::string &address()
     {
         return m_uuid;
+    }
+
+
+
+    /* Returns the instance's ComponentComputer component */
+    inline const ComponentPtr &computerComponent()
+    {
+        return m_computerComponent;
     }
 
 
@@ -134,6 +143,7 @@ public:
     inline void setLabel(const std::string &label)
     {
         m_label = label;
+        m_computerComponent->setLabel(label);
     }
 
 
@@ -187,6 +197,8 @@ public:
 protected:
     int m_ticks;
 
+    Instance(size_t maxMemory, const std::string &label, const std::string &uuid);
+
 private:
     lua_State *m_state, *m_thread;
     size_t m_memoryUsed, m_memoryMax;
@@ -194,6 +206,7 @@ private:
     bool m_initialized;
     std::chrono::system_clock::time_point m_startTime;
     std::string m_uuid, m_label;
+    ComponentPtr m_computerComponent;
 
     std::stringstream m_errorStream;
 

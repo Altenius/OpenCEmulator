@@ -96,6 +96,8 @@ ComponentPtr Component::create(const std::string &type, const std::string &uuid,
         if (screen) {
             std::static_pointer_cast<ComponentScreen>(screen)->attachKeyboard(component);
         }
+    } else if (type == "screen") {
+        component.reset(new ComponentScreen(uuid, label));
     } else {
         std::cerr << "unable to create component with unknown type: " << type << std::endl;
         // return ComponentPtr();

@@ -2,6 +2,7 @@
 #include <QFile>
 #include <functional>
 #include "Instance.h"
+#include "OpenCEmulator.h"
 #include <QUuid>
 #include <apis/ComponentApi.h>
 #include <apis/ComputerApi.h>
@@ -10,6 +11,7 @@
 #include <apis/UnicodeApi.h>
 #include <iostream>
 #include <cassert>
+#include <components/ComponentComputer.h>
 
 
 
@@ -18,30 +20,53 @@ Instance::Instance(size_t maxMemory, const std::string &label, const std::string
                                                                                           m_memoryUsed(0),
                                                                                           m_initialized(false),
                                                                                           m_persistenceApi(this),
-                                                                                          m_uuid(uuid)
+                                                                                          m_uuid(uuid),
+                                                                                          m_state(nullptr)
 {
     if (m_uuid.empty()) {
         m_uuid = QUuid::createUuid().toString().toStdString();
         m_uuid.erase(m_uuid.begin());
         m_uuid.erase(m_uuid.end() - 1);
     }
+
+    m_computerComponent.reset(new ComponentComputer(this));
+    attachComponent(m_computerComponent);
+
+    OpenCEmulator::get().addComponent(m_computerComponent);
+}
+
+
+
+InstancePtr Instance::create(size_t maxMemory, const std::string &label, const std::string &uuid)
+{
+    InstancePtr instance(new Instance(maxMemory, label, uuid));
+    instance->computerComponent()->attach(instance);
+    OpenCEmulator::get().addInstance(instance);
+
+    return instance;
 }
 
 
 
 bool Instance::initialize()
 {
-    m_state = lua_newstate(allocator, this);
-    if (m_state == nullptr) {
-        qWarning() << "Out of memory";
-        return false;
-    }
-
     ComponentApi componentApi(this);
     ComputerApi computerApi(this);
     OsApi osApi(this);
     SystemApi systemApi(this);
     UnicodeApi unicodeApi(this);
+
+    QFile machineFile(":/lua/machine.lua");
+    if (!machineFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning() << "Could not open machine.lua:" << machineFile.errorString();
+        return false;
+    }
+
+    m_state = lua_newstate(allocator, this);
+    if (m_state == nullptr) {
+        std::cerr << "Out of memory" << std::endl;
+        return false;
+    }
 
     componentApi.load();
     computerApi.load();
@@ -52,31 +77,25 @@ bool Instance::initialize()
 
     m_thread = lua_newthread(m_state);
 
-    QFile machineFile(":/lua/machine.lua");
-    if (!machineFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        qWarning() << "Could not open machine.lua:" << machineFile.errorString();
-        return false;
-    }
-
     int err;
     if ((err = luaL_loadstring(m_thread, machineFile.readAll().data())) != LUA_OK) {
         if (err == LUA_ERRSYNTAX) {
-            qWarning() << "Could not load machine.lua: " << lua_tostring(m_thread, -1);
-            lua_close(m_state);
+            std::cerr << "Could not load machine.lua: " << lua_tostring(m_thread, -1) << std::endl;
+            m_state = nullptr;
             return false;
         } else {
-            qWarning() << "Cold not load machine.lua";
-            lua_close(m_state);
+            std::cerr << "Cold not load machine.lua" << std::endl;
+            m_state = nullptr;
             return false;
         }
     }
-
-    g_stateMap.insert(std::make_pair(m_state->l_G, this));
 
     m_startTime = std::chrono::system_clock::now();
 
     m_sleeping = true;
     m_ticks = 0;
+
+    g_stateMap.insert(std::make_pair(m_state->l_G, this));
 
     return true;
 }
@@ -292,6 +311,7 @@ void Instance::detachComponent(Component *component)
 
 Instance::~Instance()
 {
+    OpenCEmulator::get().removeComponent(m_computerComponent);
     for (ComponentWeakPtr i : m_components) {
         if (auto component = i.lock()) {
             component->detach(this);
@@ -330,13 +350,14 @@ void Instance::stop()
 {
     if (m_state != nullptr) {
         lua_close(m_state);
-        m_state = nullptr;
 
         auto it = g_stateMap.find(m_state->l_G);
         assert(it != g_stateMap.end());
         if (it != g_stateMap.end()) {
             g_stateMap.erase(it);
         }
+
+        m_state = nullptr;
     }
 }
 

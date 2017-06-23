@@ -23,7 +23,7 @@ bool ComponentRealFilesystem::luaLastModified(const ArgList &args, ArgList &out)
     if (!args.checkString(0, path, out)) {
         return false;
     }
-    
+
     out.add(QFileInfo(QString::fromStdString(realPath(path))).lastModified().toMSecsSinceEpoch());
     return true;
 }

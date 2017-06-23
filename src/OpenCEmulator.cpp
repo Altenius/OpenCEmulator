@@ -144,7 +144,7 @@ void OpenCEmulator::loadInstances()
     m_instancesConfig.initialize();
 
     for (const InstanceConfig &config : m_instancesConfig.instances()) {
-        InstancePtr instance(new Instance(4 * 1024 * 1024, config.label(), config.uuid())); // 4MiB
+        InstancePtr instance = Instance::create(4 * 1024 * 1024, config.label(), config.uuid()); // 4MiB
 
         for (const std::string &uuid : config.components()) {
             ComponentPtr component = findComponent(uuid);
@@ -160,10 +160,6 @@ void OpenCEmulator::loadInstances()
                       << instance->address() << std::endl;
         }
 
-        if (!instance->initialize()) {
-            std::cerr << "Failed to initialize instance" << std::endl;
-        } else {
-            addInstance(instance);
-        }
+        // instance->start();
     }
 }

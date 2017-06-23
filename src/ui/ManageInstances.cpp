@@ -66,9 +66,7 @@ void ManageInstances::on_buttonPower_clicked()
 
 void ManageInstances::on_buttonCreate_clicked()
 {
-    InstancePtr instance = std::make_shared<Instance>(1024 * 1024 * 4);
-
-    OpenCEmulator::get().addInstance(instance);
+    Instance::create(1024 * 1024 * 4);
 }
 
 

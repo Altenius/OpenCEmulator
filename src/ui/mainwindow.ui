@@ -16,17 +16,51 @@
         <widget class="QWidget" name="centralWidget">
             <layout class="QVBoxLayout" name="verticalLayout_2">
                 <item>
-                    <widget class="QLabel" name="label">
-                        <property name="text">
-                            <string>Select screen to view</string>
+                    <widget class="QTabWidget" name="tabWidget">
+                        <property name="currentIndex">
+                            <number>0</number>
                         </property>
-                        <property name="alignment">
-                            <set>Qt::AlignCenter</set>
-                        </property>
+                        <widget class="QWidget" name="tabScreens">
+                            <attribute name="title">
+                                <string>Screens</string>
+                            </attribute>
+                            <layout class="QVBoxLayout" name="verticalLayout_3">
+                                <item>
+                                    <widget class="QLabel" name="label">
+                                        <property name="text">
+                                            <string>Select screen to view</string>
+                                        </property>
+                                        <property name="alignment">
+                                            <set>Qt::AlignCenter</set>
+                                        </property>
+                                    </widget>
+                                </item>
+                                <item>
+                                    <widget class="QListWidget" name="listScreens"/>
+                                </item>
+                            </layout>
+                        </widget>
+                        <widget class="QWidget" name="tabComponents">
+                            <attribute name="title">
+                                <string>Manage Components</string>
+                            </attribute>
+                            <layout class="QVBoxLayout" name="verticalLayout">
+                                <item>
+                                    <widget class="ManageComponents" name="manageComponents" native="true"/>
+                                </item>
+                            </layout>
+                        </widget>
+                        <widget class="QWidget" name="tabInstances">
+                            <attribute name="title">
+                                <string>Manage instances</string>
+                            </attribute>
+                            <layout class="QVBoxLayout" name="verticalLayout_4">
+                                <item>
+                                    <widget class="ManageInstances" name="manageInstances" native="true"/>
+                                </item>
+                            </layout>
+                        </widget>
                     </widget>
-                </item>
-                <item>
-                    <widget class="QListWidget" name="listScreens"/>
                 </item>
             </layout>
         </widget>
@@ -45,15 +79,7 @@
                 </property>
                 <addaction name="actionSaveSession"/>
             </widget>
-            <widget class="QMenu" name="menuEdit">
-                <property name="title">
-                    <string>Edit</string>
-                </property>
-                <addaction name="actionManageComponents"/>
-                <addaction name="actionManageInstances"/>
-            </widget>
             <addaction name="menuFile"/>
-            <addaction name="menuEdit"/>
         </widget>
         <widget class="QStatusBar" name="statusBar"/>
         <action name="actionSaveSession">
@@ -73,6 +99,20 @@
         </action>
     </widget>
     <layoutdefault spacing="6" margin="11"/>
+    <customwidgets>
+        <customwidget>
+            <class>ManageComponents</class>
+            <extends>QWidget</extends>
+            <header>ui/ManageComponents.h</header>
+            <container>1</container>
+        </customwidget>
+        <customwidget>
+            <class>ManageInstances</class>
+            <extends>QWidget</extends>
+            <header>ui/ManageInstances.h</header>
+            <container>1</container>
+        </customwidget>
+    </customwidgets>
     <resources/>
     <connections/>
 </ui>

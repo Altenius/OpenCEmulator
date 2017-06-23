@@ -22,6 +22,7 @@ Q_DECLARE_METATYPE(ComponentWeakPtr);
 void KeyboardModifier::componentsChanged(const std::vector<ComponentPtr> &components)
 {
     m_ui->comboScreen->clear();
+    m_ui->comboScreen->addItem("none", QVariant::fromValue(ComponentWeakPtr()));
     for (const ComponentPtr &component : components) {
         if (component->type() == "screen") {
             m_ui->comboScreen->addItem(QString::fromStdString(component->label()),
@@ -37,7 +38,7 @@ void KeyboardModifier::update(const ComponentPtr &component)
     ComponentModifier::update(component);
     assert(component->type() == "keyboard");
 
-    const ComponentKeyboard *keyboard = static_cast<ComponentKeyboard *>(component.get());
+    auto keyboard = std::static_pointer_cast<ComponentKeyboard>(component);
     auto screen = keyboard->screen();
     if (screen) {
         m_ui->comboScreen->setCurrentIndex(m_ui->comboScreen->findText(QString::fromStdString(screen->label())));

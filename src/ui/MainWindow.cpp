@@ -68,20 +68,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_ui(new Ui::Main
 
 
 
-void MainWindow::on_actionManageComponents_triggered()
-{
-    m_manageComponents.show();
-}
-
-
-
-void MainWindow::on_actionManageInstances_triggered()
-{
-    m_manageInstances.show();
-}
-
-
-
 MainWindow::~MainWindow()
 {
 
