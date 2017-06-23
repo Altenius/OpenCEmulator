@@ -53,11 +53,13 @@ void KeyboardModifier::on_comboScreen_currentIndexChanged(int index)
         auto keyboard = std::static_pointer_cast<ComponentKeyboard>(component);
         ComponentPtr componentScreen = m_ui->comboScreen->itemData(index).value<ComponentWeakPtr>().lock();
 
+        if (auto oldScreen = keyboard->screen()) {
+            std::static_pointer_cast<ComponentScreen>(oldScreen)->detachKeyboard(component);
+        }
+        
         if (componentScreen) {
             auto screen = std::static_pointer_cast<ComponentScreen>(componentScreen);
-            if (auto oldScreen = keyboard->screen()) {
-                std::static_pointer_cast<ComponentScreen>(oldScreen)->detachKeyboard(component);
-            }
+            
 
             keyboard->setScreen(componentScreen);
             screen->attachKeyboard(component);

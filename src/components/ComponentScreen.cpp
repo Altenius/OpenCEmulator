@@ -416,8 +416,11 @@ void ComponentScreen::attachKeyboard(const ComponentPtr &keyboard)
 
 void ComponentScreen::detachKeyboard(const ComponentPtr &keyboard)
 {
-    std::remove_if(m_keyboards.begin(), m_keyboards.end(),
-                   [keyboard](ComponentWeakPtr &c) { return c.lock() == keyboard; });
+    auto it = std::find_if(m_keyboards.begin(), m_keyboards.end(),
+                           [keyboard](ComponentWeakPtr &c) { return c.lock() == keyboard; });
+    if (it != m_keyboards.end()) {
+        m_keyboards.erase(it);
+    }
     if (m_widget) {
         if (!m_keyboards.empty()) {
             m_widget->setKeyboard(m_keyboards[0].lock());
