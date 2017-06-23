@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+    <class>ManageComponents</class>
+    <widget class="QWidget" name="ManageComponents">
+        <property name="geometry">
+            <rect>
+                <x>0</x>
+                <y>0</y>
+                <width>645</width>
+                <height>492</height>
+            </rect>
+        </property>
+        <property name="windowTitle">
+            <string>Manage Components</string>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout">
+            <property name="sizeConstraint">
+                <enum>QLayout::SetDefaultConstraint</enum>
+            </property>
+            <item>
+                <layout class="QVBoxLayout" name="verticalLayout">
+                    <property name="sizeConstraint">
+                        <enum>QLayout::SetDefaultConstraint</enum>
+                    </property>
+                    <item>
+                        <widget class="QListWidget" name="listComponents">
+                            <property name="sizePolicy">
+                                <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+                                    <horstretch>0</horstretch>
+                                    <verstretch>0</verstretch>
+                                </sizepolicy>
+                            </property>
+                            <property name="minimumSize">
+                                <size>
+                                    <width>200</width>
+                                    <height>0</height>
+                                </size>
+                            </property>
+                            <property name="maximumSize">
+                                <size>
+                                    <width>400</width>
+                                    <height>16777215</height>
+                                </size>
+                            </property>
+                        </widget>
+                    </item>
+                    <item>
+                        <widget class="QPushButton" name="buttonCreate">
+                            <property name="sizePolicy">
+                                <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                                    <horstretch>0</horstretch>
+                                    <verstretch>0</verstretch>
+                                </sizepolicy>
+                            </property>
+                            <property name="minimumSize">
+                                <size>
+                                    <width>200</width>
+                                    <height>0</height>
+                                </size>
+                            </property>
+                            <property name="maximumSize">
+                                <size>
+                                    <width>400</width>
+                                    <height>16777215</height>
+                                </size>
+                            </property>
+                            <property name="text">
+                                <string>Create New</string>
+                            </property>
+                        </widget>
+                    </item>
+                </layout>
+            </item>
+            <item>
+                <layout class="QVBoxLayout" name="verticalLayout_2">
+                    <item>
+                        <layout class="QHBoxLayout" name="horizontalLayout_2">
+                            <item>
+                                <widget class="QLabel" name="label">
+                                    <property name="text">
+                                        <string>Selected Component: </string>
+                                    </property>
+                                    <property name="alignment">
+                                        <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+                                    </property>
+                                </widget>
+                            </item>
+                            <item>
+                                <widget class="QLabel" name="labelSelected">
+                                    <property name="text">
+                                        <string>None</string>
+                                    </property>
+                                    <property name="alignment">
+                                        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                                    </property>
+                                </widget>
+                            </item>
+                        </layout>
+                    </item>
+                    <item>
+                        <layout class="QHBoxLayout" name="horizontalLayout_3">
+                            <item>
+                                <widget class="QLabel" name="label_2">
+                                    <property name="text">
+                                        <string>Label</string>
+                                    </property>
+                                </widget>
+                            </item>
+                            <item>
+                                <widget class="QLineEdit" name="lineLabel"/>
+                            </item>
+                        </layout>
+                    </item>
+                    <item>
+                        <widget class="QFrame" name="frameExtraModify">
+                            <property name="sizePolicy">
+                                <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+                                    <horstretch>0</horstretch>
+                                    <verstretch>0</verstretch>
+                                </sizepolicy>
+                            </property>
+                            <property name="frameShape">
+                                <enum>QFrame::NoFrame</enum>
+                            </property>
+                            <property name="frameShadow">
+                                <enum>QFrame::Plain</enum>
+                            </property>
+                            <property name="lineWidth">
+                                <number>1</number>
+                            </property>
+                            <layout class="QVBoxLayout" name="verticalLayout_3"/>
+                        </widget>
+                    </item>
+                    <item>
+                        <spacer name="verticalSpacer">
+                            <property name="orientation">
+                                <enum>Qt::Vertical</enum>
+                            </property>
+                            <property name="sizeHint" stdset="0">
+                                <size>
+                                    <width>20</width>
+                                    <height>40</height>
+                                </size>
+                            </property>
+                        </spacer>
+                    </item>
+                    <item>
+                        <widget class="QPushButton" name="buttonRemove">
+                            <property name="sizePolicy">
+                                <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                                    <horstretch>0</horstretch>
+                                    <verstretch>0</verstretch>
+                                </sizepolicy>
+                            </property>
+                            <property name="text">
+                                <string>Remove</string>
+                            </property>
+                        </widget>
+                    </item>
+                </layout>
+            </item>
+        </layout>
+    </widget>
+    <resources/>
+    <connections/>
+</ui>

@@ -1,0 +1,6 @@
+[submodule "lib/eris"]
+	path = lib/eris
+	url = https://github.com/Altenius/eris.git
+[submodule "lib/rapidjson"]
+	path = lib/rapidjson
+	url = https://github.com/TencentOpen/rapidjson.git

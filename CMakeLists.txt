@@ -17,9 +17,8 @@ project(OpenCEmulator)
 
 
 ## CMake options ##
-set(CMAKE_AUTOMOC ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
 
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
@@ -33,5 +32,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED true)
 
 
 find_package(Qt5Widgets)
+find_package(Threads)
 
+add_subdirectory(lib/eris)
 add_subdirectory(src)

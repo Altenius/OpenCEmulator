@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+    <class>MainWindow</class>
+    <widget class="QMainWindow" name="MainWindow">
+        <property name="geometry">
+            <rect>
+                <x>0</x>
+                <y>0</y>
+                <width>700</width>
+                <height>550</height>
+            </rect>
+        </property>
+        <property name="windowTitle">
+            <string>MainWindow</string>
+        </property>
+        <widget class="QWidget" name="centralWidget">
+            <layout class="QVBoxLayout" name="verticalLayout_2">
+                <item>
+                    <widget class="QLabel" name="label">
+                        <property name="text">
+                            <string>Select screen to view</string>
+                        </property>
+                        <property name="alignment">
+                            <set>Qt::AlignCenter</set>
+                        </property>
+                    </widget>
+                </item>
+                <item>
+                    <widget class="QListWidget" name="listScreens"/>
+                </item>
+            </layout>
+        </widget>
+        <widget class="QMenuBar" name="menuBar">
+            <property name="geometry">
+                <rect>
+                    <x>0</x>
+                    <y>0</y>
+                    <width>700</width>
+                    <height>20</height>
+                </rect>
+            </property>
+            <widget class="QMenu" name="menuFile">
+                <property name="title">
+                    <string>Fi&amp;le</string>
+                </property>
+                <addaction name="actionSaveSession"/>
+            </widget>
+            <widget class="QMenu" name="menuEdit">
+                <property name="title">
+                    <string>Edit</string>
+                </property>
+                <addaction name="actionManageComponents"/>
+                <addaction name="actionManageInstances"/>
+            </widget>
+            <addaction name="menuFile"/>
+            <addaction name="menuEdit"/>
+        </widget>
+        <widget class="QStatusBar" name="statusBar"/>
+        <action name="actionSaveSession">
+            <property name="text">
+                <string>&amp;Save Session</string>
+            </property>
+        </action>
+        <action name="actionManageComponents">
+            <property name="text">
+                <string>&amp;Manage Components</string>
+            </property>
+        </action>
+        <action name="actionManageInstances">
+            <property name="text">
+                <string>Manage &amp;Instances</string>
+            </property>
+        </action>
+    </widget>
+    <layoutdefault spacing="6" margin="11"/>
+    <resources/>
+    <connections/>
+</ui>

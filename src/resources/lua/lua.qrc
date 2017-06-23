@@ -1,0 +1,7 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/lua">
+        <file>bios.lua</file>
+        <file>machine.lua</file>
+    </qresource>
+</RCC>
