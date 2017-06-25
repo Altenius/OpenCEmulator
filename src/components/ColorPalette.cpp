@@ -139,7 +139,7 @@ float FourBitPalette::delta(int colorA, int colorB)
     unsigned char rD = (rA - rB);
     unsigned char gD = (gA - gB);
     unsigned char bD = (bA - bB);
-    return 0.2126f * rD * rD * 0.7152f * gD * gD * 0.0722f * bD *
+    return 0.2126f * rD * rD + 0.7152f * gD * gD + 0.0722f * bD *
            bD; // This calculates the distance between colorA and colorB.
 }
 

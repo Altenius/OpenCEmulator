@@ -44,18 +44,18 @@ public:
 
 
     /* Sets the foreground color to color. */
-    inline void setForegroundColor(quint32 color)
+    void setForegroundColor(const Color &color)
     {
-        m_foregroundColor = color;
+        m_foregroundColor = m_colorPalette->inflate(m_colorPalette->deflate(color));
         m_packed = m_colorPalette->pack(m_foregroundColor, m_backgroundColor);
     }
 
 
 
     /* Sets the background color to color. */
-    inline void setBackgroundColor(quint32 color)
+    void setBackgroundColor(const Color &color)
     {
-        m_backgroundColor = color;
+        m_backgroundColor = m_colorPalette->inflate(m_colorPalette->deflate(color));
         m_packed = m_colorPalette->pack(m_foregroundColor, m_backgroundColor);
     }
 

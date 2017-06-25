@@ -133,6 +133,13 @@ bool ComponentGPU::luaSetBackground(const ArgList &args, ArgList &out)
     if (!args.checkInt(0, color, out)) {
         return false;
     }
+    
+    bool palette = false;
+    if (args.isboolean(1)) {
+        if (!args.checkBoolean(1, palette, out)) {
+            return false;
+        }
+    }
 
     Color oldColor = screen->backgroundColor();
     if (oldColor.isPalette()) {
@@ -142,7 +149,7 @@ bool ComponentGPU::luaSetBackground(const ArgList &args, ArgList &out)
         out.add(Argument(static_cast<long long>(oldColor.value())));
     }
 
-    screen->setBackgroundColor(color);
+    screen->setBackgroundColor(Color(color, palette));
 
     return true;
 }
@@ -172,6 +179,13 @@ bool ComponentGPU::luaSetForeground(const ArgList &args, ArgList &out)
         return false;
     }
 
+    bool palette = false;
+    if (args.isboolean(1)) {
+        if (!args.checkBoolean(1, palette, out)) {
+            return false;
+        }
+    }
+
     Color oldColor = screen->foregroundColor();
     if (oldColor.isPalette()) {
         out.add(Argument(static_cast<long long>(screen->getPaletteColor(oldColor))));
@@ -180,7 +194,7 @@ bool ComponentGPU::luaSetForeground(const ArgList &args, ArgList &out)
         out.add(Argument(static_cast<long long>(oldColor.value())));
     }
 
-    screen->setForegroundColor(color);
+    screen->setForegroundColor(Color(color, palette));
 
     return true;
 }
