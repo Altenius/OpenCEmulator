@@ -10,6 +10,7 @@
 #include "InstancesConfiguration.h"
 #include "ComponentsConfiguration.h"
 #include <vector>
+#include <components/ComponentSerializer.h>
 
 class OpenCEmulator : public QApplication
 {
@@ -55,6 +56,24 @@ public:
 
 
 
+    /* Returns the persistence directory for storing instances
+     * states. By default this is BASE_DIRECTORY/persist */
+    const std::string &persistDirectory()
+    {
+        return m_persistDirectory;
+    }
+
+
+
+    /* Returns the name of the file storing information about the
+     * state of components. By default this is BASE_DIRECTORY/state */
+    const std::string &stateFile()
+    {
+        return m_stateFile;
+    }
+
+
+
     /* Returns the list of components. */
     inline std::vector<ComponentPtr> &components()
     {
@@ -83,6 +102,9 @@ public:
     /* Saves the emulator state. */
     void save();
 
+    /* Loads the emulator state */
+    void load();
+
 signals:
 
     void componentsChanged(const std::vector<ComponentPtr> &components);
@@ -94,12 +116,16 @@ private:
     Scheduler m_scheduler;
     std::string m_baseDirectory;
     std::string m_filesystemDirectory;
+    std::string m_persistDirectory;
+    std::string m_stateFile;
 
     InstancesConfiguration m_instancesConfig;
     ComponentsConfiguration m_componentsConfig;
 
     std::vector<ComponentPtr> m_components;
     std::vector<InstancePtr> m_instances;
+    
+    ComponentSerializer m_componentSerializer;
 
     /* Loads the components from components.json. */
     void loadComponents();

@@ -29,10 +29,13 @@ public:
 
     void cleanup() override;
 
+    /* Sets the resolution of the screen to (x, y). */
     void setResolution(int x, int y);
 
 
 
+    /* Sets the color depth of the screen to depth.
+     * Valid depths: 1, 4, 8. */
     inline void setColorDepth(int depth)
     {
         m_colorDepth = depth;
@@ -40,6 +43,7 @@ public:
 
 
 
+    /* Sets the foreground color to color. */
     inline void setForegroundColor(quint32 color)
     {
         m_foregroundColor = color;
@@ -48,6 +52,7 @@ public:
 
 
 
+    /* Sets the background color to color. */
     inline void setBackgroundColor(quint32 color)
     {
         m_backgroundColor = color;
@@ -56,6 +61,8 @@ public:
 
 
 
+    /* Returns the color depth. This will be either
+     * 1, 4, or 8. */
     inline int depth()
     {
         return m_colorDepth;
@@ -63,6 +70,7 @@ public:
 
 
 
+    /* Returns the foreground color. */
     inline Color foregroundColor()
     {
         return m_foregroundColor;
@@ -70,6 +78,7 @@ public:
 
 
 
+    /* Returns the background color. */
     inline Color backgroundColor()
     {
         return m_backgroundColor;
@@ -77,6 +86,8 @@ public:
 
 
 
+    /* Returns the color of a Color representing
+     * a palette index. */
     inline uint32_t getPaletteColor(const Color &color)
     {
         return m_colorPalette->at(color.value());
@@ -84,6 +95,7 @@ public:
 
 
 
+    /* Sets (x, y) to the current resolution. */
     inline void getResolution(int &x, int &y)
     {
         x = m_width;
@@ -92,6 +104,7 @@ public:
 
 
 
+    /* Returns the foreground color of a character at (x, y). */
     inline Color getForegroundColor(int x, int y)
     {
         if (x < 0 || y < 0 || x > m_width || y >= m_height) {
@@ -102,6 +115,7 @@ public:
 
 
 
+    /* Returns the background color of a character at (x, y). */
     inline Color getBackgroundColor(int x, int y)
     {
         if (x < 0 || y < 0 || x > m_width || y >= m_height) {
@@ -112,6 +126,7 @@ public:
 
 
 
+    /* Returns the pixmap used for drawing to a widget. */
     inline const QPixmap &buffer()
     {
         return m_buffer;
@@ -119,16 +134,22 @@ public:
 
 
 
+    /* Sets the color of a palette index. */
     void setPaletteColor(unsigned char idx, unsigned int color);
 
+    /* Sets a string starting at (x, y) to value. If vertical is true,
+     * value is written from the top to bottom. */
     void set(int x, int y, const QString &value, bool vertical);
 
+    /* Fills an area with a character. */
     void fill(int x, int y, int w, int h, QChar character);
 
+    /* Copies an area to another area. */
     void copy(int x, int y, unsigned int w, unsigned int h, int tx, int ty);
 
 
 
+    /* Returns the character at (x, y). */
     ushort get(int x, int y)
     {
         if (x >= 0 && y >= 0 && x < m_width && y < m_height) {
@@ -139,6 +160,7 @@ public:
 
 
 
+    /* Sets the Qt widget to widget. */
     inline void setWidget(ScreensWidgetPtr widget)
     {
         m_widget = widget;
@@ -146,6 +168,8 @@ public:
 
 
 
+    /* Returns the widget. Returns a blank shared_ptr if
+     * no widget is attached. */
     inline ScreensWidgetPtr &widget()
     {
         return m_widget;
@@ -153,10 +177,13 @@ public:
 
 
 
+    /* Sets the viewport size to (w, h). Must be smaller than
+     * the screen. */
     bool setViewport(int w, int h);
 
 
 
+    /* Returns the width of the viewport. */
     inline int viewportWidth()
     {
         return m_viewportX;
@@ -164,6 +191,7 @@ public:
 
 
 
+    /* Returns the height of the viewport. */
     inline int viewportHeight()
     {
         return m_viewportY;
@@ -171,9 +199,11 @@ public:
 
 
 
+    /* Attaches a keyboard. */
     void attachKeyboard(const ComponentPtr &keyboard);
 
 
+    /* Detaches a keyboard. */
     void detachKeyboard(const ComponentPtr &keyboard);
 
 
@@ -186,6 +216,7 @@ public:
 
 
 
+    /* Returns the list of attached keyboard. */
     inline std::vector<ComponentWeakPtr> &keyboards()
     {
         return m_keyboards;
@@ -193,18 +224,22 @@ public:
 
 
 
+    virtual bool serialize(WriteBuffer &buffer) override;
+
+    virtual bool unserialize(ReadBuffer &buffer) override;
+
 private:
-    int m_width, m_height;
-    int m_colorDepth = 6;
+    uint32_t m_width, m_height;
+    int m_colorDepth = 8;
 
     Color m_foregroundColor;
     Color m_backgroundColor;
     uint16_t m_packed;
 
-    int m_viewportX, m_viewportY;
-
-
-    std::unique_ptr<ColorPalette> m_colorPalette;
+    uint32_t m_viewportX, m_viewportY;
+    
+    
+    ColorPalettePtr m_colorPalette;
 
     QPixmap m_buffer;
     std::vector<std::vector<Pixel> > m_pixels;

@@ -3,14 +3,27 @@
 
 
 #include <array>
-#include <Color.h>
+#include <memory>
+#include <ReadBuffer.h>
+#include "Color.h"
+#include "WriteBuffer.h"
 
 #define ONEBIT_COLOR 0xFFFFFF
+
+
+class ColorPalette;
+
+typedef std::shared_ptr<ColorPalette> ColorPalettePtr;
+
 
 class ColorPalette
 {
 public:
     ColorPalette();
+
+    static ColorPalettePtr create(ReadBuffer &buffer);
+
+    static ColorPalettePtr create(uint8_t depth);
 
     virtual uint32_t inflate(uint32_t index) =0;
 
@@ -50,6 +63,10 @@ public:
     uint32_t unpackForeground(uint16_t color);
 
     uint32_t unpackBackground(uint16_t color);
+
+    virtual bool serialize(WriteBuffer &buffer) =0;
+
+    virtual bool unserialize(ReadBuffer &buffer) =0;
 };
 
 
@@ -65,6 +82,10 @@ public:
     unsigned int at(unsigned char index) override;
 
     void set(unsigned char index, unsigned int color) override;
+
+    virtual bool serialize(WriteBuffer &buffer);
+
+    virtual bool unserialize(ReadBuffer &buffer) override;
 };
 
 
@@ -88,10 +109,15 @@ public:
 
 
 
+    virtual bool serialize(WriteBuffer &buffer);
+
+    virtual bool unserialize(ReadBuffer &buffer) override;
+
+
 protected:
     float delta(int colorA, int colorB);
 
-    static unsigned int colors[16];
+    unsigned int colors[16];
 };
 
 
@@ -106,8 +132,9 @@ public:
 
     bool isFromPalette(uint32_t color) override;
 
-protected:
-    static unsigned int colors[16];
+    virtual bool serialize(WriteBuffer &buffer) override;
+
+    virtual bool unserialize(ReadBuffer &buffer) override;
 };
 
 

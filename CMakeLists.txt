@@ -40,4 +40,5 @@ set(RAPIDJSON_BUILD_TESTS off)
 
 add_subdirectory(lib/rapidjson)
 include_directories(lib/rapidjson/include)
+add_subdirectory(lib/altshared)
 add_subdirectory(src)

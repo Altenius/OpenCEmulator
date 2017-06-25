@@ -12,9 +12,9 @@ public:
 
     virtual void load() override;
 
-    void persist(QVector<uchar> &vector);
+    void persist(std::vector<char> &vector);
 
-    void unpersist(const QVector<uchar> &vector);
+    void unpersist(const std::vector<char> &vector);
 
 private:
     void configure();

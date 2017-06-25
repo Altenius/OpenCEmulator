@@ -1,4 +1,5 @@
 #include <QDebug>
+#include <assert.h>
 #include "PersistenceApi.h"
 #include "Instance.h"
 
@@ -55,8 +56,8 @@ void PersistenceApi::load()
                 lua_rawset(state, id_uperms); // k v ; uperms[k] = v
 
                 if (lua_istable(state, -1)) {
-                    QString key = lua_tostring(state, -2);
-                    QVector<QString> childKeys;
+                    std::string key = lua_tostring(state, -2);
+                    std::vector<std::string> childKeys;
                     lua_pushnil(state); // k v nil
                     while (lua_next(state, -2) != 0) {
                         // k v ck cv
@@ -70,17 +71,17 @@ void PersistenceApi::load()
                             fix = true;
                         }
 
-                        childKeys.append(lua_tostring(state, -1));
+                        childKeys.push_back(lua_tostring(state, -1));
                         if (fix) {
                             lua_pop(state, 1);
                         }
                     }
 
-                    std::sort(childKeys.begin(), childKeys.end(), [](QString a, QString b) { return a < b; });
+                    std::sort(childKeys.begin(), childKeys.end(), [](std::string &a, std::string &b) { return a.compare(b) < 0; });
 
-                    for (auto it = childKeys.constBegin(); it != childKeys.constEnd(); ++it) {
-                        lua_pushstring(state, (key + "." + (*it)).toUtf8().data()); // k v ck
-                        lua_getfield(state, -2, (*it).toUtf8().data());
+                    for (std::string &child : childKeys) {
+                        lua_pushstring(state, (key + "." + child).data()); // k v ck
+                        lua_getfield(state, -2, child.data());
                         storeValue();
                     }
                 }
@@ -106,35 +107,41 @@ int PersistenceApi::lpersistKey(lua_State *state)
 
 
 
-void PersistenceApi::persist(QVector<uchar> &vector)
+void PersistenceApi::persist(std::vector<char> &vector)
 {
-    // TODO: stop garbage collection
     lua_State *state = m_instance->state();
+    lua_gc(state, LUA_GCSTOP, 0);
 
     lua_getfield(state, LUA_REGISTRYINDEX, "perms");
+    assert(lua_type(state, 1) == LUA_TTHREAD);
     lua_pushvalue(state, 1); // index 1 is always the kernel thread
 
     eris_persist(state, -2, -1);
     size_t len;
     const char *data = lua_tolstring(state, -1, &len);
-    lua_pop(state, 2);
+    lua_pop(state, 3);
     vector.resize(len);
     std::copy(data, data + len, vector.begin());
+    
+    lua_gc(state, LUA_GCRESTART, 0);
 }
 
 
 
-void PersistenceApi::unpersist(const QVector<uchar> &vector)
+void PersistenceApi::unpersist(const std::vector<char> &vector)
 {
-    // TODO: stop garbage collection
     configure();
     lua_State *state = m_instance->state();
+    lua_gc(state, LUA_GCSTOP, 0);
+
 
     lua_getfield(state, LUA_REGISTRYINDEX, "uperms");
-    lua_pushlstring(state, (const char *) vector.data(), vector.size());
+    lua_pushlstring(state, vector.data(), vector.size());
     eris_unpersist(state, -2, -1);
     lua_insert(state, -3);
     lua_pop(state, 2);
+
+    lua_gc(state, LUA_GCRESTART, 0);
 }
 
 

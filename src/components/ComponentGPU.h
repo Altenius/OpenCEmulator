@@ -11,12 +11,16 @@ class ComponentGPU : public Component
 public:
     ComponentGPU(const std::string &uuid = std::string(), const std::string &label = std::string());
 
+    virtual bool serialize(WriteBuffer &buffer) override;
+    
+    virtual bool unserialize(ReadBuffer &buffer) override;
+
 private:
     unsigned char m_maxDepth = 6;
     unsigned char m_maxWidth = 100, m_maxHeight = 30;
-    ComponentScreen *m_bound;
+    ComponentWeakPtr m_bound;
 
-    bool checkScreen(ArgList &out);
+    bool checkScreen(ArgList &out, std::shared_ptr<ComponentScreen> &screen);
 
 public:
     bool luaGetDepth(const ArgList &args, ArgList &out);
@@ -58,7 +62,6 @@ public:
     bool luaGetPaletteColor(const ArgList &args, ArgList &out);
 
     bool luaSet(const ArgList &args, ArgList &out);
-
 };
 
 

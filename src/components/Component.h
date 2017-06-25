@@ -7,6 +7,8 @@
 #include <unordered_map>
 #include <ArgList.h>
 #include <functional>
+#include <ReadBuffer.h>
+#include "WriteBuffer.h"
 
 class Component;
 
@@ -49,6 +51,16 @@ public:
     void detach(InstancePtr instance);
 
     void detach(Instance *instance);
+
+
+
+    virtual bool serialize(WriteBuffer &buffer)
+    { return true; };
+
+
+
+    virtual bool unserialize(ReadBuffer &buffer)
+    { return true; };
 
 
 

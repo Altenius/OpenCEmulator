@@ -29,12 +29,16 @@ OpenCEmulator::OpenCEmulator(int argc, char **argv) : QApplication(argc, argv), 
 
     m_baseDirectory = QDir::homePath().toStdString().append("/.ocemulator");
     m_filesystemDirectory = m_baseDirectory + "/files";
+    m_persistDirectory = m_baseDirectory + "/persist";
+    m_stateFile = m_baseDirectory + "/state";
 
     QDir(QDir::homePath()).mkpath(".ocemulator");
-    QDir(QString::fromStdString(m_baseDirectory)).mkpath("files");
+    
+    QDir emulatorDir(QString::fromStdString(m_baseDirectory));
+    emulatorDir.mkpath("files");
+    emulatorDir.mkpath("persist");
 
-    loadComponents();
-    loadInstances();
+    load();
 }
 
 
@@ -123,6 +127,12 @@ void OpenCEmulator::save()
 {
     m_componentsConfig.saveConfig(m_components);
     m_instancesConfig.saveConfig(m_instances);
+    
+    for (InstancePtr &instance : m_instances) {
+        instance->persist();
+    }
+    
+    m_componentSerializer.serialize(m_components);
 }
 
 
@@ -159,7 +169,17 @@ void OpenCEmulator::loadInstances()
             std::cout << "attached component " << component->uuid() << " (" << component->type() << ") to instance "
                       << instance->address() << std::endl;
         }
-
-        // instance->start();
+        
+        instance->unpersist();
     }
+}
+
+
+
+void OpenCEmulator::load()
+{
+    loadComponents();
+    loadInstances();
+    
+    m_componentSerializer.unserialize(m_components);
 }

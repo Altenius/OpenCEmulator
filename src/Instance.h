@@ -79,8 +79,8 @@ public:
      * instance has been running */
     inline lua_Number cpuTime()
     {
-        return (static_cast<float>((std::chrono::system_clock::now() - m_startTime).count())
-                * std::chrono::system_clock::period::num / std::chrono::system_clock::period::den);
+        return (std::chrono::duration_cast<std::chrono::duration<double>>(
+                std::chrono::steady_clock::now() - m_startTime).count());
     }
 
 
@@ -195,7 +195,13 @@ public:
         return m_synchronized || queued();
     }
 
-    
+
+
+    /* Save the state of the instance to a file */
+    void persist();
+
+    /* Load the state of the instance from a file */
+    void unpersist();
 
 protected:
     int m_ticks;
@@ -208,7 +214,7 @@ private:
     size_t m_memoryUsed, m_memoryMax;
     std::vector<ComponentWeakPtr> m_components;
     bool m_initialized;
-    std::chrono::system_clock::time_point m_startTime;
+    std::chrono::steady_clock::time_point m_startTime;
     std::string m_uuid, m_label;
     ComponentPtr m_computerComponent;
 
@@ -238,6 +244,7 @@ private:
     /* Resumes the instance. If synchronizedReturn is true, pushes
      * the result of the synchronized call. */
     bool runThreaded(bool synchronizedReturn = false);
+
 
 public:
     /* Returns the instance from the state-to-instance map */

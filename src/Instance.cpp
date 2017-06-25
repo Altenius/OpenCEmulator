@@ -12,6 +12,7 @@
 #include <iostream>
 #include <cassert>
 #include <components/ComponentComputer.h>
+#include <fstream>
 
 
 
@@ -33,6 +34,40 @@ Instance::Instance(size_t maxMemory, const std::string &label, const std::string
     attachComponent(m_computerComponent);
 
     OpenCEmulator::get().addComponent(m_computerComponent);
+    
+    /*
+    
+    
+    
+    m_state = luaL_newstate();
+    luaL_openlibs(m_state);
+    PersistenceApi pers(this);
+    pers.load();
+    m_thread = lua_newthread(m_state);
+    if (luaL_loadstring(m_thread, "local t = 0 while true do print('test', t, coroutine.yield()) t = t + 1 end") != LUA_OK) {
+        std::cout << lua_tostring(m_thread, -1) << std::endl;
+    }
+    lua_resume(m_thread, nullptr, 0);
+    lua_resume(m_thread, nullptr, 0);
+    
+    std::cout << "top: " << lua_gettop(m_state) << std::endl;
+    
+    std::vector<char> data;
+    pers.persist(data);
+    
+    
+    
+    lua_close(m_state);
+    m_state = luaL_newstate();
+    luaL_openlibs(m_state);
+    PersistenceApi pers2(this);
+    pers2.load();
+    pers2.unpersist(data);
+    
+    m_thread = lua_tothread(m_state, 1);
+    lua_resume(m_thread, nullptr, 0);
+    std::cout << lua_tostring(m_thread, -1) << std::endl;
+    lua_resume(m_thread, nullptr, 0);*/
 }
 
 
@@ -57,49 +92,23 @@ bool Instance::initialize()
     SystemApi systemApi(this);
     UnicodeApi unicodeApi(this);
 
-    QFile machineFile(":/lua/machine.lua");
-    if (!machineFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        qWarning() << "Could not open machine.lua:" << machineFile.errorString();
-        return false;
-    }
-
-    m_state = lua_newstate(allocator, this);
+    m_state = luaL_newstate();// lua_newstate(allocator, this);
     if (m_state == nullptr) {
         std::cerr << "Out of memory" << std::endl;
         return false;
     }
 
+    g_stateMap.insert(std::make_pair(m_state->l_G, this));
+
     componentApi.load();
     computerApi.load();
     osApi.load();
-    m_persistenceApi.load();
     systemApi.load();
     unicodeApi.load();
-
-    m_thread = lua_newthread(m_state);
-
-    int err;
-    if ((err = luaL_loadstring(m_thread, machineFile.readAll().data())) != LUA_OK) {
-        if (err == LUA_ERRSYNTAX) {
-            std::cerr << "Could not load machine.lua: " << lua_tostring(m_thread, -1) << std::endl;
-            m_state = nullptr;
-            return false;
-        } else {
-            std::cerr << "Cold not load machine.lua" << std::endl;
-            m_state = nullptr;
-            return false;
-        }
-    }
-
-    m_startTime = std::chrono::system_clock::now();
-
-    m_sleeping = true;
-    m_ticks = 0;
-
-    g_stateMap.insert(std::make_pair(m_state->l_G, this));
+    m_persistenceApi.load();
     
     m_initialized = false;
-    m_synchronized = false;
+
 
     return true;
 }
@@ -112,7 +121,7 @@ void *Instance::allocator(void *ud, void *ptr, size_t osize, size_t nsize)
 
     if (nsize > osize) {
         instance->m_memoryUsed += nsize - osize;
-        if (instance->m_memoryUsed > instance->m_memoryMax) {
+        if (instance->m_memoryUsed > instance->m_memoryMax && instance->m_initialized) {
             free(ptr);
             return NULL;
         }
@@ -349,6 +358,35 @@ void Instance::start()
     if (!initialize()) {
         std::cerr << "failed to initialize instance" << std::endl;
     }
+
+    QFile machineFile(":/lua/machine.lua");
+    if (!machineFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        std::cerr << "Could not open machine.lua:" << machineFile.errorString().toStdString() << std::endl;
+        return;
+    }
+
+    m_thread = lua_newthread(m_state);
+
+    int err;
+    if ((err = luaL_loadstring(m_thread, machineFile.readAll().data())) != LUA_OK) {
+        if (err == LUA_ERRSYNTAX) {
+            std::cerr << "Could not load machine.lua: " << lua_tostring(m_thread, -1) << std::endl;
+            m_state = nullptr;
+            return;
+        } else {
+            std::cerr << "Cold not load machine.lua" << std::endl;
+            m_state = nullptr;
+            return;
+        }
+    }
+
+    m_startTime = std::chrono::steady_clock::now();
+
+    m_sleeping = true;
+    m_ticks = 0;
+
+    m_initialized = false;
+    m_synchronized = false;
 }
 
 
@@ -363,9 +401,64 @@ void Instance::stop()
         if (it != g_stateMap.end()) {
             g_stateMap.erase(it);
         }
-
+        
+        m_initialized = false;
         m_state = nullptr;
     }
+}
+
+
+
+void Instance::persist()
+{
+    //std::lock_guard<std::mutex> lock(m_mutex);
+    if (m_state != nullptr) {
+        std::vector<char> data;
+        
+        assert(lua_gettop(m_state) == 1);
+        
+        m_persistenceApi.persist(data);
+        
+        std::ofstream file(OpenCEmulator::get().persistDirectory() + "/" + m_uuid, std::ios::binary);
+        if (!file.is_open()) {
+            std::cerr << "Failed to open file for persistence" << std::endl;
+            return;
+        }
+        
+        file.write(data.data(), data.size());
+        file.close();
+    } else {
+        std::remove((OpenCEmulator::get().persistDirectory() + "/" + m_uuid).c_str());
+    }
+}
+
+
+
+void Instance::unpersist()
+{
+    std::ifstream file(OpenCEmulator::get().persistDirectory() + "/" + m_uuid, std::ios::binary);
+    if (!file.is_open()) {
+        std::cerr << "Failed to open file for persistence" << std::endl;
+        return;
+    }
+    
+    file.seekg(0, std::ios::end);
+    size_t size = file.tellg();
+    file.seekg(0, std::ios::beg);
+
+    std::vector<char> data(size);
+    file.read(data.data(), size);
+    file.close();
+
+    if (!initialize()) {
+        std::cerr << "Failed to initialize state" << std::endl;
+        return;
+    }
+    
+    m_persistenceApi.unpersist(data);
+    m_thread = lua_tothread(m_state, 1);
+
+    m_initialized = true;
 }
 
 

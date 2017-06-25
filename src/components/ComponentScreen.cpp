@@ -304,11 +304,11 @@ void ComponentScreen::copy(int x, int y, unsigned int w, unsigned int h, int tx,
         if (sx + ty < 0) {
             return;
         }
-        ex = std::max<int>(0, std::min(m_width - 1, std::max<int>(0, x + tx) - tx)) - 1;
+        ex = std::max<int>(0, std::min<int>(m_width - 1, std::max<int>(0, x + tx) - tx)) - 1;
     } else {
         dx = 1;
         sx = std::max<int>(0, x);
-        ex = std::max<int>(0, std::min(m_width - 1, std::min<int>(x + w + tx, m_width - 1) - tx)) + 1;
+        ex = std::max<int>(0, std::min<int>(m_width - 1, std::min<int>(x + w + tx, m_width - 1) - tx)) + 1;
     }
 
     if (ty < 0) {
@@ -317,11 +317,11 @@ void ComponentScreen::copy(int x, int y, unsigned int w, unsigned int h, int tx,
         if (sy + ty < 0) {
             return;
         }
-        ey = std::max<int>(0, std::min(m_height - 1, std::max<int>(0, y + ty) - ty)) - 1;
+        ey = std::max<int>(0, std::min<int>(m_height - 1, std::max<int>(0, y + ty) - ty)) - 1;
     } else {
         dy = 1;
         sy = std::max<int>(0, y);
-        ey = std::max<int>(0, std::min(m_height - 1, std::min<int>(y + h + ty, m_height - 1) - ty)) + 1;
+        ey = std::max<int>(0, std::min<int>(m_height - 1, std::min<int>(y + h + ty, m_height - 1) - ty)) + 1;
     }
 
     for (int ix = sx; ix != ex; ix += dx) {
@@ -428,4 +428,74 @@ void ComponentScreen::detachKeyboard(const ComponentPtr &keyboard)
             m_widget->setKeyboard(nullptr);
         }
     }
+}
+
+
+
+bool ComponentScreen::serialize(WriteBuffer &buffer)
+{
+    buffer.writeBE<uint32_t>(m_width);
+    buffer.writeBE<uint32_t>(m_height);
+    buffer.writeBE<uint32_t>(m_viewportX);
+    buffer.writeBE<uint32_t>(m_viewportY);
+    buffer.writeBE<uint16_t>(m_packed);
+    if (!m_colorPalette->serialize(buffer)) {
+        return false;
+    }
+
+
+    assert(m_pixels.size() == m_width);
+
+    for (std::vector<Pixel> &line : m_pixels) {
+        assert(line.size() == m_height);
+
+        for (Pixel &pixel : line) {
+            buffer.writeBE<uint16_t>(pixel.color);
+            buffer.writeBE<ushort>(pixel.text);
+        }
+    }
+
+    return true;
+}
+
+
+
+bool ComponentScreen::unserialize(ReadBuffer &buffer)
+{
+    if (!buffer.readBE<uint32_t>(m_width) || !buffer.readBE<uint32_t>(m_height) ||
+        !buffer.readBE<uint32_t>(m_viewportX) || !buffer.readBE<uint32_t>(m_viewportY) ||
+        !buffer.readBE<uint16_t>(m_packed)) {
+        return false;
+    }
+
+    if (!(m_colorPalette = ColorPalette::create(buffer))) {
+        m_colorPalette.reset(new EightBitPalette);
+        return false;
+    }
+
+    m_backgroundColor = m_colorPalette->unpackBackground(m_packed);
+    m_foregroundColor = m_colorPalette->unpackForeground(m_packed);
+
+    m_buffer = QPixmap(m_width * PIXEL_WIDTH, m_height * PIXEL_HEIGHT);
+    QPainter painter(&m_buffer);
+
+    m_pixels.resize(m_width);
+    for (uint32_t x = 0; x < m_width; ++x) {
+        std::vector<Pixel> &line = m_pixels[x];
+        line.resize(m_height);
+        for (uint32_t y = 0; y < m_height; ++y) {
+            Pixel &pixel = line[y];
+            if (!buffer.readBE<uint16_t>(pixel.color) || !buffer.readBE<ushort>(pixel.text)) {
+                std::cerr << "end of file while reading pixel data" << std::endl;
+                return false;
+            }
+
+            painter.fillRect(x * PIXEL_WIDTH, y * PIXEL_HEIGHT, FontLoader::get().width(pixel.text) * PIXEL_WIDTH,
+                             PIXEL_HEIGHT, Color(m_colorPalette->unpackBackground(pixel.color)).toQColor());
+            painter.setPen(Color(m_colorPalette->unpackForeground(pixel.color)).toQColor());
+            painter.drawPixmap(QPoint(x * PIXEL_WIDTH, y * PIXEL_HEIGHT), FontLoader::get().getGlyph(pixel.text));
+        }
+    }
+
+    return true;
 }

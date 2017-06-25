@@ -1,3 +1,4 @@
+#include <iostream>
 #include "ColorPalette.h"
 
 
@@ -30,59 +31,44 @@ uint32_t ColorPalette::unpackBackground(uint16_t color)
 
 
 
-FourBitPalette::FourBitPalette()
+ColorPalettePtr ColorPalette::create(ReadBuffer &buffer)
 {
-
-}
-
-
-
-float FourBitPalette::delta(int colorA, int colorB)
-{ // https://github.com/MightyPirates/OpenComputers/blob/master-MC1.7.10/src/main/scala/li/cil/oc/util/PackedColor.scala#L84
-    unsigned char rA = (colorA & 0xFF0000) >> 16, gA = (colorA & 0xFF00) >> 8, bA = colorA & 0xFF;
-    unsigned char rB = (colorA & 0xFF0000) >> 16, gB = (colorA & 0xFF00) >> 8, bB = colorA & 0xFF;
-
-    unsigned char rD = (rA - rB);
-    unsigned char gD = (gA - gB);
-    unsigned char bD = (bA - bB);
-    return 0.2126 * rD * rD * 0.7152 * gD * gD * 0.0722 * bD *
-           bD; // This calculates the distance between colorA and colorB.
-}
-
-
-
-uint32_t FourBitPalette::inflate(uint32_t index)
-{
-    return colors[std::min<uint32_t>(sizeof(colors) - 1, index)];
-}
-
-
-
-uint8_t FourBitPalette::deflate(const Color &color)
-{
-    if (color.isPalette()) {
-        return color.value() % sizeof(colors);
-    }
-    float closest = delta(color.value(), colors[0]);
-    unsigned char index = 0;
-
-    for (unsigned char i = 1; i < sizeof(colors); i++) {
-        float d = delta(color.value(), colors[i]);
-        if (d < closest) {
-            closest = d;
-            index = i;
-        }
+    uint8_t type;
+    if (!buffer.readBE<uint8_t>(type)) {
+        return ColorPalettePtr();
     }
 
-    return index;
+    ColorPalettePtr palette;
+
+    switch (type) {
+        case 0:
+            palette.reset(new OneBitPalette);
+            break;
+        case 1:
+            palette.reset(new FourBitPalette);
+            break;
+        case 2:
+            palette.reset(new EightBitPalette);
+            break;
+        default:
+            std::cerr << "unknown color palette type: " << type << ". Has the state file been corrupted?" << std::endl;
+            return ColorPalettePtr();
+    }
+
+    if (!palette->unserialize(buffer)) {
+        std::cerr << "failed to unserialize color palette" << std::endl;
+        return ColorPalettePtr();
+    }
+
+    return palette;
 }
 
 
 
-unsigned int FourBitPalette::colors[] = {0xFFFFFF, 0xFFCC33, 0xCC66CC, 0x6699FF,
-                                         0xFFFF33, 0x33CC33, 0xFF6699, 0x333333,
-                                         0xCCCCCC, 0x336699, 0x9933CC, 0x333399,
-                                         0x663300, 0x336600, 0xFF3333, 0x000000};
+ColorPalettePtr ColorPalette::create(uint8_t depth)
+{
+    return ColorPalettePtr();
+}
 
 
 
@@ -107,7 +93,123 @@ uint8_t OneBitPalette::deflate(const Color &color)
 
 
 
-unsigned int EightBitPalette::colors[] = {};
+unsigned int OneBitPalette::at(unsigned char index)
+{
+    return index == 0 ? 0 : ONEBIT_COLOR;
+}
+
+
+
+void OneBitPalette::set(unsigned char index, unsigned int color)
+{
+
+}
+
+
+
+bool OneBitPalette::serialize(WriteBuffer &buffer)
+{
+    buffer.writeBE<uint8_t>(0);
+    return true;
+}
+
+
+
+bool OneBitPalette::unserialize(ReadBuffer &buffer)
+{
+    return true;
+}
+
+
+
+FourBitPalette::FourBitPalette() : colors{0xFFFFFF, 0xFFCC33, 0xCC66CC, 0x6699FF,
+                                           0xFFFF33, 0x33CC33, 0xFF6699, 0x333333,
+                                           0xCCCCCC, 0x336699, 0x9933CC, 0x333399,
+                                           0x663300, 0x336600, 0xFF3333, 0x000000}
+{
+}
+
+
+
+float FourBitPalette::delta(int colorA, int colorB)
+{ // https://github.com/MightyPirates/OpenComputers/blob/master-MC1.7.10/src/main/scala/li/cil/oc/util/PackedColor.scala#L84
+    unsigned char rA = (colorA & 0xFF0000) >> 16, gA = (colorA & 0xFF00) >> 8, bA = colorA & 0xFF;
+    unsigned char rB = (colorB & 0xFF0000) >> 16, gB = (colorB & 0xFF00) >> 8, bB = colorB & 0xFF;
+
+    unsigned char rD = (rA - rB);
+    unsigned char gD = (gA - gB);
+    unsigned char bD = (bA - bB);
+    return 0.2126f * rD * rD * 0.7152f * gD * gD * 0.0722f * bD *
+           bD; // This calculates the distance between colorA and colorB.
+}
+
+
+
+uint32_t FourBitPalette::inflate(uint32_t index)
+{
+    return colors[std::min<uint32_t>(16 - 1, index)];
+}
+
+
+
+uint8_t FourBitPalette::deflate(const Color &color)
+{
+    if (color.isPalette()) {
+        return color.value() % 16;
+    }
+    float closest = delta(color.value(), colors[0]);
+    unsigned char index = 0;
+
+    for (unsigned char i = 1; i < 16; i++) {
+        float d = delta(color.value(), colors[i]);
+        if (d < closest) {
+            closest = d;
+            index = i;
+        }
+    }
+
+    return index;
+}
+
+
+
+unsigned int FourBitPalette::at(unsigned char index)
+{
+    return colors[std::min<uint8_t>(16 - 1, index)];
+}
+
+
+
+void FourBitPalette::set(unsigned char index, unsigned int color)
+{
+    colors[std::min<uint8_t>(16 - 1, index)] = color;
+}
+
+
+
+bool FourBitPalette::serialize(WriteBuffer &buffer)
+{
+    buffer.writeBE<uint8_t>(1);
+
+    for (uint8_t i = 0; i < 16; ++i) {
+        buffer.writeBE<uint32_t>(colors[i]);
+    }
+
+    return true;
+}
+
+
+
+bool FourBitPalette::unserialize(ReadBuffer &buffer)
+{
+    for (uint8_t i = 0; i < 16; ++i) {
+        if (!buffer.readBE<uint32_t>(colors[i])) {
+            return false;
+        }
+    }
+
+    return true;
+}
 
 
 
@@ -115,8 +217,8 @@ EightBitPalette::EightBitPalette()
 {
     // initialize palette to grayscale
 
-    for (int i = 0; i < sizeof(colors); ++i) {
-        uint32_t shade = 0xFF * (i + 1) / (sizeof(colors) + 1);
+    for (int i = 0; i < 16; ++i) {
+        uint32_t shade = 0xFF * (i + 1) / (16 + 1);
         colors[i] = (shade << 16) | (shade << 8) | (shade);
     }
 }
@@ -132,10 +234,10 @@ EightBitPalette::EightBitPalette()
 uint32_t EightBitPalette::inflate(uint32_t value)
 {
     if (isFromPalette(value)) {
-        return FourBitPalette::inflate(value);
+        return colors[value];
     }
 
-    uint32_t index = value - sizeof(colors);
+    uint32_t index = value - 16;
     uint8_t idxB = index % BLUES;
     uint8_t idxG = (index / BLUES) % GREENS;
     uint8_t idxR = (index / BLUES / GREENS) % REDS;
@@ -150,7 +252,7 @@ uint32_t EightBitPalette::inflate(uint32_t value)
 
 bool EightBitPalette::isFromPalette(uint32_t color)
 {
-    return color < sizeof(colors);
+    return color < 16;
 }
 
 
@@ -168,7 +270,7 @@ uint8_t EightBitPalette::deflate(const Color &color)
     uint8_t idxR = static_cast<uint8_t>((static_cast<float>(r) * (REDS - 1) / 0xFF + 0.5));
     uint8_t idxG = static_cast<uint8_t>((static_cast<float>(g) * (GREENS - 1) / 0xFF + 0.5));
     uint8_t idxB = static_cast<uint8_t>((static_cast<float>(b) * (BLUES - 1) / 0xFF + 0.5));
-    uint8_t deflated = sizeof(colors) + idxR * GREENS * BLUES + idxG * BLUES + idxB;
+    uint8_t deflated = 16 + idxR * GREENS * BLUES + idxG * BLUES + idxB;
     if (delta(inflate(deflated & 0xFF), color.value()) < delta(inflate(index & 0xFF), color.value())) {
         return deflated;
     }
@@ -177,28 +279,33 @@ uint8_t EightBitPalette::deflate(const Color &color)
 
 
 
-unsigned int OneBitPalette::at(unsigned char index)
+bool EightBitPalette::serialize(WriteBuffer &buffer)
 {
-    return index == 0 ? 0 : ONEBIT_COLOR;
+    buffer.writeBE<uint8_t>(2);
+
+    for (uint8_t i = 0; i < 16; ++i) {
+        buffer.writeBE<uint32_t>(colors[i]);
+    }
+
+    return true;
 }
 
 
 
-void OneBitPalette::set(unsigned char index, unsigned int color)
+bool EightBitPalette::unserialize(ReadBuffer &buffer)
 {
+    for (uint8_t i = 0; i < 16; ++i) {
+        if (!buffer.readBE<uint32_t>(colors[i])) {
+            return false;
+        }
+    }
 
+    return true;
 }
 
 
 
-unsigned int FourBitPalette::at(unsigned char index)
-{
-    return colors[std::min<uint8_t>(sizeof(colors) - 1, index)];
-}
 
 
 
-void FourBitPalette::set(unsigned char index, unsigned int color)
-{
-    colors[std::min<uint8_t>(sizeof(colors) - 1, index)] = color;
-}
+

@@ -7,6 +7,13 @@ using namespace std::placeholders;
 
 
 
+struct SerializedData
+{
+    std::string screenAddress;
+};
+
+
+
 ComponentGPU::ComponentGPU(const std::string &uuid, const std::string &label) : Component("gpu", uuid, label)
 {
     registerMethod("getDepth", std::bind(&ComponentGPU::luaGetDepth, this, _1, _2),
@@ -68,11 +75,12 @@ ComponentGPU::ComponentGPU(const std::string &uuid, const std::string &label) : 
 bool ComponentGPU::luaSetResolution(const ArgList &args, ArgList &out)
 {
     int w, h;
-    if (!checkScreen(out) || !args.checkInt(0, w, out) || !args.checkInt(1, h, out)) {
+    std::shared_ptr<ComponentScreen> screen;
+    if (!checkScreen(out, screen) || !args.checkInt(0, w, out) || !args.checkInt(1, h, out)) {
         return false;
     }
 
-    m_bound->setResolution(w, h);
+    screen->setResolution(w, h);
 
     return true;
 }
@@ -107,7 +115,7 @@ bool ComponentGPU::luaBind(const ArgList &args, ArgList &out)
         // TODO: reset stuff
     }
 
-    m_bound = static_cast<ComponentScreen *>(component.get());
+    m_bound = component;
 
 
     return true;
@@ -117,7 +125,8 @@ bool ComponentGPU::luaBind(const ArgList &args, ArgList &out)
 
 bool ComponentGPU::luaSetBackground(const ArgList &args, ArgList &out)
 {
-    if (!checkScreen(out)) {
+    std::shared_ptr<ComponentScreen> screen;
+    if (!checkScreen(out, screen)) {
         return false;
     }
     int color;
@@ -125,35 +134,37 @@ bool ComponentGPU::luaSetBackground(const ArgList &args, ArgList &out)
         return false;
     }
 
-    Color oldColor = m_bound->backgroundColor();
+    Color oldColor = screen->backgroundColor();
     if (oldColor.isPalette()) {
-        out.add(Argument(static_cast<long long>(m_bound->getPaletteColor(oldColor))));
+        out.add(Argument(static_cast<long long>(screen->getPaletteColor(oldColor))));
         out.add(Argument(static_cast<long long>(oldColor.value())));
     } else {
         out.add(Argument(static_cast<long long>(oldColor.value())));
     }
 
-    m_bound->setBackgroundColor(color);
+    screen->setBackgroundColor(color);
 
     return true;
 }
 
 
 
-bool ComponentGPU::checkScreen(ArgList &out)
+bool ComponentGPU::checkScreen(ArgList &out, std::shared_ptr<ComponentScreen> &screen)
 {
-    if (!m_bound) {
-        out.add("no screen");
-        return false;
+    if (auto component = m_bound.lock()) {
+        screen = std::static_pointer_cast<ComponentScreen>(component);
+        return true;
     }
-    return true;
+    out.add("no screen");
+    return false;
 }
 
 
 
 bool ComponentGPU::luaSetForeground(const ArgList &args, ArgList &out)
 {
-    if (!checkScreen(out)) {
+    std::shared_ptr<ComponentScreen> screen;
+    if (!checkScreen(out, screen)) {
         return false;
     }
     int color;
@@ -161,15 +172,15 @@ bool ComponentGPU::luaSetForeground(const ArgList &args, ArgList &out)
         return false;
     }
 
-    Color oldColor = m_bound->foregroundColor();
+    Color oldColor = screen->foregroundColor();
     if (oldColor.isPalette()) {
-        out.add(Argument(static_cast<long long>(m_bound->getPaletteColor(oldColor))));
+        out.add(Argument(static_cast<long long>(screen->getPaletteColor(oldColor))));
         out.add(Argument(static_cast<long long>(oldColor.value())));
     } else {
         out.add(Argument(static_cast<long long>(oldColor.value())));
     }
 
-    m_bound->setForegroundColor(color);
+    screen->setForegroundColor(color);
 
     return true;
 }
@@ -178,12 +189,13 @@ bool ComponentGPU::luaSetForeground(const ArgList &args, ArgList &out)
 
 bool ComponentGPU::luaGetResolution(const ArgList &args, ArgList &out)
 {
-    if (!checkScreen(out)) {
+    std::shared_ptr<ComponentScreen> screen;
+    if (!checkScreen(out, screen)) {
         return false;
     }
 
     int x, y;
-    m_bound->getResolution(x, y);
+    screen->getResolution(x, y);
 
     out.add(Argument(static_cast<long long>(x)));
     out.add(Argument(static_cast<long long>(y)));
@@ -195,7 +207,6 @@ bool ComponentGPU::luaGetResolution(const ArgList &args, ArgList &out)
 bool ComponentGPU::luaMaxResolution(const ArgList &args, ArgList &out)
 {
 
-
     out.add(static_cast<long long>(m_maxWidth));
     out.add(static_cast<long long>(m_maxHeight));
     return true;
@@ -205,8 +216,8 @@ bool ComponentGPU::luaMaxResolution(const ArgList &args, ArgList &out)
 
 bool ComponentGPU::luaGetScreen(const ArgList &args, ArgList &out)
 {
-    if (m_bound) {
-        out.add(m_bound->uuid());
+    if (auto component = m_bound.lock()) {
+        out.add(component->uuid());
     }
     return true;
 }
@@ -215,7 +226,8 @@ bool ComponentGPU::luaGetScreen(const ArgList &args, ArgList &out)
 
 bool ComponentGPU::luaSetDepth(const ArgList &args, ArgList &out)
 {
-    if (!checkScreen(out)) {
+    std::shared_ptr<ComponentScreen> screen;
+    if (!checkScreen(out, screen)) {
         return false;
     }
 
@@ -224,7 +236,7 @@ bool ComponentGPU::luaSetDepth(const ArgList &args, ArgList &out)
         return false;
     }
 
-    m_bound->setColorDepth(depth);
+    screen->setColorDepth(depth);
     return true;
 }
 
@@ -242,11 +254,12 @@ bool ComponentGPU::luaMaxDepth(const ArgList &args, ArgList &out)
 
 bool ComponentGPU::luaGetForeground(const ArgList &args, ArgList &out)
 {
-    if (!checkScreen(out)) {
+    std::shared_ptr<ComponentScreen> screen;
+    if (!checkScreen(out, screen)) {
         return false;
     }
 
-    out.add(static_cast<long long>(m_bound->foregroundColor().value()));
+    out.add(static_cast<long long>(screen->foregroundColor().value()));
     return true;
 }
 
@@ -254,11 +267,12 @@ bool ComponentGPU::luaGetForeground(const ArgList &args, ArgList &out)
 
 bool ComponentGPU::luaGetBackground(const ArgList &args, ArgList &out)
 {
-    if (!checkScreen(out)) {
+    std::shared_ptr<ComponentScreen> screen;
+    if (!checkScreen(out, screen)) {
         return false;
     }
 
-    out.add(static_cast<long long>(m_bound->backgroundColor().value()));
+    out.add(static_cast<long long>(screen->backgroundColor().value()));
     return true;
 }
 
@@ -266,11 +280,12 @@ bool ComponentGPU::luaGetBackground(const ArgList &args, ArgList &out)
 
 bool ComponentGPU::luaGetDepth(const ArgList &args, ArgList &out)
 {
-    if (!checkScreen(out)) {
+    std::shared_ptr<ComponentScreen> screen;
+    if (!checkScreen(out, screen)) {
         return false;
     }
 
-    out.add(static_cast<long long>(m_bound->depth()));
+    out.add(static_cast<long long>(screen->depth()));
     return true;
 }
 
@@ -278,7 +293,8 @@ bool ComponentGPU::luaGetDepth(const ArgList &args, ArgList &out)
 
 bool ComponentGPU::luaGetPaletteColor(const ArgList &args, ArgList &out)
 {
-    if (!checkScreen(out)) {
+    std::shared_ptr<ComponentScreen> screen;
+    if (!checkScreen(out, screen)) {
         return false;
     }
 
@@ -287,7 +303,7 @@ bool ComponentGPU::luaGetPaletteColor(const ArgList &args, ArgList &out)
         return false;
     }
 
-    out.add(static_cast<long long>(m_bound->getPaletteColor(idx)));
+    out.add(static_cast<long long>(screen->getPaletteColor(idx)));
     return true;
 }
 
@@ -295,7 +311,8 @@ bool ComponentGPU::luaGetPaletteColor(const ArgList &args, ArgList &out)
 
 bool ComponentGPU::luaSetPaletteColor(const ArgList &args, ArgList &out)
 {
-    if (!checkScreen(out)) {
+    std::shared_ptr<ComponentScreen> screen;
+    if (!checkScreen(out, screen)) {
         return false;
     }
 
@@ -304,8 +321,8 @@ bool ComponentGPU::luaSetPaletteColor(const ArgList &args, ArgList &out)
         return false;
     }
 
-    out.add(static_cast<long long>(m_bound->getPaletteColor(idx)));
-    m_bound->setPaletteColor(idx, color);
+    out.add(static_cast<long long>(screen->getPaletteColor(idx)));
+    screen->setPaletteColor(idx, color);
     return true;
 }
 
@@ -316,7 +333,8 @@ bool ComponentGPU::luaSet(const ArgList &args, ArgList &out)
     int x, y;
     std::string value;
     bool vertical = false;
-    if (!checkScreen(out) || !args.checkInt(0, x, out) || !args.checkInt(1, y, out) ||
+    std::shared_ptr<ComponentScreen> screen;
+    if (!checkScreen(out, screen) || !args.checkInt(0, x, out) || !args.checkInt(1, y, out) ||
         !args.checkString(2, value, out)) {
         return false;
     }
@@ -326,7 +344,7 @@ bool ComponentGPU::luaSet(const ArgList &args, ArgList &out)
         }
     }
 
-    m_bound->set(x - 1, y - 1, QString::fromStdString(value), vertical);
+    screen->set(x - 1, y - 1, QString::fromStdString(value), vertical);
 
     return true;
 }
@@ -337,7 +355,8 @@ bool ComponentGPU::luaFill(const ArgList &args, ArgList &out)
 {
     int x, y, w, h;
     std::string value;
-    if (!checkScreen(out) || !args.checkInt(0, x, out) || !args.checkInt(1, y, out) ||
+    std::shared_ptr<ComponentScreen> screen;
+    if (!checkScreen(out, screen) || !args.checkInt(0, x, out) || !args.checkInt(1, y, out) ||
         !args.checkInt(2, w, out) || !args.checkInt(3, h, out) || !args.checkString(4, value, out)) {
         return false;
     }
@@ -345,7 +364,7 @@ bool ComponentGPU::luaFill(const ArgList &args, ArgList &out)
     QString uvalue = QString::fromStdString(value);
 
     if (uvalue.length() == 1) {
-        m_bound->fill(x - 1, y - 1, w, h, uvalue.at(0));
+        screen->fill(x - 1, y - 1, w, h, uvalue.at(0));
         return true;
     }
     out.add("invalid fill value");
@@ -356,14 +375,15 @@ bool ComponentGPU::luaFill(const ArgList &args, ArgList &out)
 
 bool ComponentGPU::luaCopy(const ArgList &args, ArgList &out)
 {
+    std::shared_ptr<ComponentScreen> screen;
     int x, y, w, h, tx, ty;
-    if (!checkScreen(out) || !args.checkInt(0, x, out) || !args.checkInt(1, y, out) ||
+    if (!checkScreen(out, screen) || !args.checkInt(0, x, out) || !args.checkInt(1, y, out) ||
         !args.checkInt(2, w, out) || !args.checkInt(3, h, out) ||
         !args.checkInt(4, tx, out) || !args.checkInt(5, ty, out)) {
         return false;
     }
 
-    m_bound->copy(x - 1, y - 1, w, h, tx, ty);
+    screen->copy(x - 1, y - 1, w, h, tx, ty);
 
     return true;
 }
@@ -372,29 +392,30 @@ bool ComponentGPU::luaCopy(const ArgList &args, ArgList &out)
 
 bool ComponentGPU::luaGet(const ArgList &args, ArgList &out)
 {
+    std::shared_ptr<ComponentScreen> screen;
     int x, y;
-    if (!checkScreen(out) || !args.checkInt(0, x, out) || !args.checkInt(1, y, out)) {
+    if (!checkScreen(out, screen) || !args.checkInt(0, x, out) || !args.checkInt(1, y, out)) {
         return false;
     }
 
     x--;
     y--;
 
-    out.add(QString(m_bound->get(x, y)).toStdString());
+    out.add(QString(screen->get(x, y)).toStdString());
 
-    Color fg = m_bound->getForegroundColor(x, y);
-    Color bg = m_bound->getBackgroundColor(x, y);
+    Color fg = screen->getForegroundColor(x, y);
+    Color bg = screen->getBackgroundColor(x, y);
     int fgIndex = -1, bgIndex = -1;
 
     if (fg.isPalette()) {
         fgIndex = fg.value();
-        out.add(static_cast<long long>(m_bound->getPaletteColor(fg)));
+        out.add(static_cast<long long>(screen->getPaletteColor(fg)));
     } else {
         out.add(static_cast<long long>(fg.value()));
     }
     if (bg.isPalette()) {
         bgIndex = bg.value();
-        out.add(static_cast<long long>(m_bound->getPaletteColor(bg)));
+        out.add(static_cast<long long>(screen->getPaletteColor(bg)));
     } else {
         out.add(static_cast<long long>(bg.value()));
     };
@@ -415,12 +436,13 @@ bool ComponentGPU::luaGet(const ArgList &args, ArgList &out)
 
 bool ComponentGPU::luaSetViewport(const ArgList &args, ArgList &out)
 {
+    std::shared_ptr<ComponentScreen> screen;
     int w, h;
-    if (!checkScreen(out) || !args.checkInt(0, w, out) || !args.checkInt(1, h, out)) {
+    if (!checkScreen(out, screen) || !args.checkInt(0, w, out) || !args.checkInt(1, h, out)) {
         return false;
     }
 
-    if (!m_bound->setViewport(w, h)) {
+    if (!screen->setViewport(w, h)) {
         out.add("unsupported viewport resolution");
         return false;
     }
@@ -432,11 +454,47 @@ bool ComponentGPU::luaSetViewport(const ArgList &args, ArgList &out)
 
 bool ComponentGPU::luaGetViewport(const ArgList &args, ArgList &out)
 {
-    if (!checkScreen(out)) {
+    std::shared_ptr<ComponentScreen> screen;
+    if (!checkScreen(out, screen)) {
         return false;
     }
 
-    out.add(Argument(static_cast<long long>(m_bound->viewportWidth())));
-    out.add(Argument(static_cast<long long>(m_bound->viewportHeight())));
+    out.add(Argument(static_cast<long long>(screen->viewportWidth())));
+    out.add(Argument(static_cast<long long>(screen->viewportHeight())));
+    return true;
+}
+
+
+
+bool ComponentGPU::serialize(WriteBuffer &buffer)
+{
+    SerializedData sd;
+
+    if (auto component = m_bound.lock()) {
+        sd.screenAddress = component->uuid();
+    }
+
+    buffer.writeString(sd.screenAddress);
+    
+    return true;
+}
+
+
+
+bool ComponentGPU::unserialize(ReadBuffer &buffer)
+{
+    std::string address;
+    if (!buffer.readString(address)) {
+        return false;
+    }
+    
+    ComponentPtr component = OpenCEmulator::get().findComponent(address);
+    if (!component) {
+        std::cerr << "Could not find screen with address " << address << " while unserializing gpu" << std::endl;
+        return true;
+    }
+    
+    m_bound = component;
+    
     return true;
 }

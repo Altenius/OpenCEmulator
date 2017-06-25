@@ -78,7 +78,7 @@ set(OCE_SOURCES
         InstancesConfiguration.cpp
         InstancesConfiguration.h
         ComponentsConfiguration.cpp
-        ComponentsConfiguration.h)
+        ComponentsConfiguration.h components/ComponentSerializer.cpp components/ComponentSerializer.h)
 
 set(OCE_UIS
         ui/mainwindow.ui
@@ -100,4 +100,4 @@ qt5_add_resources(OCE_RESOURCES ${OCE_QRCS})
 set(CMAKE_AUTOMOC ON)
 
 add_executable(OpenCEmulator ${OCE_SOURCES} ${OCE_UI} ${OCE_RESOURCES})
-target_link_libraries(OpenCEmulator Eris Qt5::Widgets ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(OpenCEmulator AltShared Eris Qt5::Widgets ${CMAKE_THREAD_LIBS_INIT})
