@@ -1,0 +1,12 @@
+#ifndef OPENCEMULATOR_USERDATA_H
+#define OPENCEMULATOR_USERDATA_H
+
+
+
+class Userdata {
+
+};
+
+
+
+#endif //OPENCEMULATOR_USERDATA_H

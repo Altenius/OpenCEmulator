@@ -4,6 +4,7 @@
 
 #include "ComponentFilesystem.h"
 #include <queue>
+#include <File.h>
 
 class ComponentRealFilesystem : public ComponentFilesystem
 {
@@ -14,8 +15,8 @@ private:
     std::string realPath(std::string path);
 
     std::string m_path;
-    std::unordered_map<long long, std::shared_ptr<std::fstream>> m_handles;
-    std::queue<long long> m_freeHandles;
+    std::unordered_map<uint64_t, std::shared_ptr<File>> m_handles;
+    // std::queue<uint64_t> m_freeHandles;
     int m_topHandle = 0;
 
 public:

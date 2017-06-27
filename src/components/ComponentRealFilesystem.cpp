@@ -79,8 +79,8 @@ bool ComponentRealFilesystem::luaWrite(const ArgList &args, ArgList &out)
         return false;
     }
 
-    auto stream = it->second;
-    stream->write(data.data(), data.length());
+    auto file = it->second;
+    file->write(data.data(), data.length());
 
     out.add(true);
     return true;
@@ -102,21 +102,24 @@ bool ComponentRealFilesystem::luaRead(const ArgList &args, ArgList &out)
         return false;
     }
 
-    auto stream = it->second;
-    if (stream->eof() || !stream->is_open()) {
+    auto file = it->second;
+    if (file->eof() || !file->isOpen()) {
         return true;
     }
 
     std::string buffer;
     char buf[1024];
-    while (!stream->eof() && count > 0) {
-        stream->read(buf, (count > 1024 ? 1024 : count));
+    while (!file->eof() && count > 0) {
+        int rd = file->read(buf, (count > 1024 ? 1024 : count));
+        if (rd < 0) {
+            continue;
+        }
 
-        buffer.append(buf, stream->gcount());
-        count -= stream->gcount();
+        buffer.append(buf, rd);
+        count -= rd;
     }
 
-    out.add(buffer);
+    out.add(std::move(buffer));
     return true;
 }
 
@@ -198,22 +201,21 @@ bool ComponentRealFilesystem::luaSeek(const ArgList &args, ArgList &out)
         return false;
     }
 
-    auto stream = it->second;
+    auto file = it->second;
 
-    std::ios::seekdir way;
+    int way;
     if (whence == "cur")
-        way = std::ios::cur;
+        way = SEEK_CUR;
     else if (whence == "set")
-        way = std::ios::beg;
+        way = SEEK_SET;
     else if (whence == "end")
-        way = std::ios::end;
+        way = SEEK_END;
     else {
         out.add("invalid mode");
         return false;
     }
-
-    stream->seekg(offset, way);
-    out.add(static_cast<lua_Number>(stream->tellg())); // TODO: fix this shit
+    
+    out.add(static_cast<lua_Number>(file->seek(offset, way)));
     return true;
 }
 
@@ -235,7 +237,6 @@ bool ComponentRealFilesystem::luaClose(const ArgList &args, ArgList &out)
 
     it->second->close();
     m_handles.erase(it);
-    m_freeHandles.push(handle);
 
     return true;
 }
@@ -297,7 +298,7 @@ bool ComponentRealFilesystem::luaSize(const ArgList &args, ArgList &out)
 
 bool ComponentRealFilesystem::luaSpaceTotal(const ArgList &args, ArgList &out)
 {
-    out.add(Argument(static_cast<long long>(1024 * 1024 * 1024))); // Who knows?
+    out.add(Argument(static_cast<long long>(1024 * 1024 * 1024))); // TODO: compute this maybe
     return true;
 }
 
@@ -310,42 +311,37 @@ bool ComponentRealFilesystem::luaOpen(const ArgList &args, ArgList &out)
         return false;
     }
 
-    std::ios_base::openmode mode = std::ios_base::in;
+    File::OpenMode mode = File::MODE_WRITE;
     if (args.size() > 1) {
         std::string sMode;
         if (!args.checkString(1, sMode, out)) {
             return false;
         }
         if (sMode == "a") {
-            mode = std::ios_base::app;
+            mode = File::MODE_APPEND;
         } else if (sMode == "r") {
-            mode = std::ios_base::in;
+            mode = File::MODE_READ;
         } else if (sMode == "rb") {
-            mode = std::ios_base::in | std::ios_base::binary;
+            mode = File::MODE_READ_BINARY;
         } else if (sMode == "w") {
-            mode = std::ios_base::out;
+            mode = File::MODE_WRITE;
         } else if (sMode == "wb") {
-            mode = std::ios_base::out | std::ios_base::binary;
+            mode = File::MODE_WRITE_BINARY;
         } else {
             out.add("unsupported mode");
             return false;
         }
     }
 
-    std::fstream *file = new std::fstream();
-    file->open(realPath(path), mode);
-    if (mode & std::ios_base::in && !file->is_open()) {
+    std::shared_ptr<File> file = std::make_shared<File>(realPath(path), mode);
+    if (!file->isOpen()) {
         return false;
     }
     long long handle; // todo: userdata
-    if (!m_freeHandles.empty()) {
-        handle = m_freeHandles.front();
-        m_freeHandles.pop();
-    } else {
-        handle = m_topHandle++;
-    }
+    
+    handle = m_topHandle++;
 
-    m_handles.insert(std::make_pair(handle, std::shared_ptr<std::fstream>(file)));
+    m_handles.insert(std::make_pair(handle, file));
     out.add(handle);
     return true;
 }
