@@ -78,7 +78,7 @@ set(OCE_SOURCES
         InstancesConfiguration.cpp
         InstancesConfiguration.h
         ComponentsConfiguration.cpp
-        ComponentsConfiguration.h components/ComponentSerializer.cpp components/ComponentSerializer.h)
+        ComponentsConfiguration.h components/ComponentSerializer.cpp components/ComponentSerializer.h Userdata.cpp Userdata.h)
 
 set(OCE_UIS
         ui/mainwindow.ui

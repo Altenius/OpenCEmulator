@@ -113,6 +113,9 @@ void Argument::dump(lua_State *state) const
             }
             break;
         }
+        case Argument::USERDATA:
+            
+            break;
         default:
             lua_pushnil(state);
     }
@@ -128,6 +131,13 @@ Argument::Argument(std::vector<Argument> &&array) : m_type(ARRAY), m_array(std::
 
 
 Argument::Argument(const std::vector<Argument> &array) : m_type(ARRAY), m_array(array)
+{
+
+}
+
+
+
+Argument::Argument(const std::shared_ptr<Userdata> &userdata) : m_type(USERDATA), m_userdata(userdata)
 {
 
 }

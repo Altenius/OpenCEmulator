@@ -2,10 +2,12 @@
 #define OPENCEMULATOR_ARGLIST_H
 
 #include "lua.hpp"
+#include "Userdata.h"
 #include <string>
 #include <vector>
 #include <Qt>
 #include <cmath>
+#include <memory>
 
 class Argument
 {
@@ -25,6 +27,8 @@ public:
     Argument(std::vector<Argument> &&array);
 
     Argument(const std::vector<Argument> &array);
+    
+    Argument(const std::shared_ptr<Userdata> &userdata);
 
     Argument();
 
@@ -35,6 +39,7 @@ public:
         BOOLEAN,
         INTEGER,
         ARRAY,
+        USERDATA,
         NIL
     };
 
@@ -111,6 +116,7 @@ private:
 
     std::string m_string;
     std::vector<Argument> m_array;
+    std::shared_ptr<Userdata> m_userdata;
     union
     {
         double m_number;
